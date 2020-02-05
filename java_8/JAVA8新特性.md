@@ -1192,9 +1192,11 @@
 
   3. 理解Collector中函数必须满足同一性（identity）和可结合性（associativity）的目的
 
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/image-20200204205135907.png)![image-20200204225522197](C:\Users\dennis\AppData\Roaming\Typora\typora-user-images\image-20200204225522197.png)
+![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/image-20200204205135907.png)![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200205173810.png)
 
 A中间结果类型  T流中元素类型  R最终返回类型
+
+
 
 
 
