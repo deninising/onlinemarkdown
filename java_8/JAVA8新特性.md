@@ -1052,7 +1052,11 @@
   
   ```
 
--  **map 与 flatmap的区别:**把Stream中 的每一个元素，映射成另外一个元素。
+## map与flatMap
+
+- **map 与 flatMap的区别:**把Stream中 的每一个元素，映射成另外一个元素。
+
+  
 
   1. map生成的是个1:1映射，每个输入元素，都按照规则转换成为另外一个元素。还有一些场景，是一对多映射关系的，这时需要 flatMap。
 
@@ -1117,7 +1121,9 @@
   }
   ```
 
-- **分组/分区**
+## collector搜集器
+
+- 分组/分区**
 
   ```java
   package com.dennis.jdk8.stream;
@@ -1274,7 +1280,7 @@
              // 先按名字分组，再找出各组中分数最小元素
              Map<String, Student> map4 = supplier.get()
                      .collect(Collectors.groupingBy(Student::getName, Collectors.collectingAndThen(Collectors.minBy(Comparator.comparingInt(Student::getScore)), Optional::get)));
-     
+     		// 建议多使用该种方式
              Map<String, Optional<Student>> map5 = supplier.get()
                      .collect(Collectors.groupingBy(Student::getName, Collectors.minBy(Comparator.comparingInt(Student::getScore))));
              System.out.println(map4);
@@ -1284,10 +1290,14 @@
      }
      
      ```
-  
      
-  
-  
+## Comparator比较器
+1. 通用比较方法、
+2. 特定比较方法
+3. 串联比较方法thencompararing
+
+
+
 
 
 
