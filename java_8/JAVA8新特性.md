@@ -38,9 +38,9 @@
 
 - **函数式接口**（functionInterface）
 
-  **定义：**有且只有一个抽象方法的接口称为函数式接口（Conceptually, a functional interface has exactly one abstract method.）
+  **定义：** 有且只有一个抽象方法的接口称为函数式接口（Conceptually, a functional interface has exactly one abstract method.）
 
-  **实例化方式：**lambda表达式、方法引用、构造器引用（Note that instances of functional interfaces can be created with lambda expressions, method references, or constructor references）
+  **实例化方式：** lambda表达式、方法引用、构造器引用（Note that instances of functional interfaces can be created with lambda expressions, method references, or constructor references）
 
 - **函数式接口注解（@FunctionalInterface）：**
   - 满足函数式接口定义的接口可以显示的在该接口上加上@FunctionalInterface注解，表示这是一个函数式接口
@@ -250,7 +250,7 @@
 - **andThen与compose方法的对比**
 
   - andThen：先执行调用者的apply()方法，再执行作为参数的Founction对象的apply方法
-  - compose:  与andThen执行apply的顺序相反
+  - compose: 与andThen执行apply的顺序相反
 
   ```java
   package com.dennis.jdk8.function;
@@ -551,136 +551,136 @@
 
 - **用于解决对空值的判断，避免出现NullPointerException**
 
-  **传统方式：**
+  - **传统方式：**
 
-  ```java
-  // 传统方式判断空,比较繁琐
-  if (null != person){
-      Address address = person.getAddress();
-      if(null != address){
-          // todo others
-      }
-  }
-  ```
+    ```java
+    // 传统方式判断空,比较繁琐
+    if (null != person){
+        Address address = person.getAddress();
+        if(null != address){
+            // todo others
+        }
+    }
+    ```
 
-  **optional不推荐的使用方式：与传统方式在形式上没有任何区别**
+  - **optional不推荐的使用方式：与传统方式在形式上没有任何区别**
 
-  ```java
-  // 以下为不推荐方式
-  String s = null;
-  s = Person.getName;
-  if (null != s){
-      // todo sth
-  }
-  
-  Option<String> option = Option.of(s);
-  if(option.isPresent){
-      // todo sth
-      Object obj = option.get();
-      // todo others
-  }
-  ```
+    ```java
+    // 以下为不推荐方式
+    String s = null;
+    s = Person.getName;
+    if (null != s){
+        // todo sth
+    }
+    
+    Option<String> option = Option.of(s);
+    if(option.isPresent){
+        // todo sth
+        Object obj = option.get();
+        // todo others
+    }
+    ```
 
-  **optional的推荐使用方式：采用函数式接口调用**
+  - **optional的推荐使用方式：采用函数式接口调用**
 
-  ```java
-  package com.dennis.jdk8.optional;
-  
-  import java.util.Optional;
-  
-  /**
-   * 描述： optional demo
-   *
-   * @author Dennis
-   * @version 1.0
-   * @date 2020/1/14 21:37
-   */
-  public class OptionalTest01 {
-      public static void main(String[] args) {
-  
-          // Object obj = Person.getObj();
-          // Optional<Object> opt = Optional.of(obj)    能确定obj一定不为空
-          // Optional<Object> opt = Optional.empty()    所得到的opt包含一个空元素
-          // Optional<Object> opt = Optional.ofNullable(obj)  不确定obj是否为空
-  
-          Optional<String> opt = Optional.of("hello");
-  
-          // 不推荐的使用方法
-          if (opt.isPresent()) {
-              System.out.println(opt.get());
-          }
-          System.out.println("----------------");
-  
-          // 推荐使用的方式
-  
-          // 1、optional 所包含的元素不为null则执行函数式接口方法，否则不执行（不为空）
-          opt.ifPresent(item-> System.out.println(item.toUpperCase()));
-          System.out.println(opt.get());
-          System.out.println("----------------");
-          // 2、optional 所包含的元素不为null则执行函数式接口方法，否则不执行（为空）
-          Optional<Object> opt1 = Optional.empty();
-          opt1.ifPresent(System.out::println);
-          System.out.println("----------------");
-          // 3、optional 所包含的元素不为null则应用所包含元素，否则应用其他元素（不为空）
-          System.out.println(opt.orElse("world"));
-          System.out.println("----------------");
-          // 4、optional 所包含的元素不为null则应用所包含元素，否则应用其他元素（为空）
-          System.out.println(opt1.orElse("world"));
-          System.out.println("----------------");
-          // 5、optional 所包含的元素不为null则应用所包含元素，否则应用其他元素（不为空）
-          System.out.println(opt.orElseGet(()->"Hi"));
-          System.out.println("----------------");
-          // 6、optional 所包含的元素不为null则应用所包含元素，否则应用其他元素（为空）
-          System.out.println(opt1.orElseGet(()->"Hi"));
-          System.out.println("----------------");
-      }
-  }
-  ```
+    ```java
+    package com.dennis.jdk8.optional;
+    
+    import java.util.Optional;
+    
+    /**
+    * 描述： optional demo
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/1/14 21:37
+    */
+    public class OptionalTest01 {
+        public static void main(String[] args) {
+    
+            // Object obj = Person.getObj();
+            // Optional<Object> opt = Optional.of(obj)    能确定obj一定不为空
+            // Optional<Object> opt = Optional.empty()    所得到的opt包含一个空元素
+            // Optional<Object> opt = Optional.ofNullable(obj)  不确定obj是否为空
+    
+            Optional<String> opt = Optional.of("hello");
+    
+            // 不推荐的使用方法
+            if (opt.isPresent()) {
+                System.out.println(opt.get());
+            }
+            System.out.println("----------------");
+    
+            // 推荐使用的方式
+    
+            // 1、optional 所包含的元素不为null则执行函数式接口方法，否则不执行（不为空）
+            opt.ifPresent(item-> System.out.println(item.toUpperCase()));
+            System.out.println(opt.get());
+            System.out.println("----------------");
+            // 2、optional 所包含的元素不为null则执行函数式接口方法，否则不执行（为空）
+            Optional<Object> opt1 = Optional.empty();
+            opt1.ifPresent(System.out::println);
+            System.out.println("----------------");
+            // 3、optional 所包含的元素不为null则应用所包含元素，否则应用其他元素（不为空）
+            System.out.println(opt.orElse("world"));
+            System.out.println("----------------");
+            // 4、optional 所包含的元素不为null则应用所包含元素，否则应用其他元素（为空）
+            System.out.println(opt1.orElse("world"));
+            System.out.println("----------------");
+            // 5、optional 所包含的元素不为null则应用所包含元素，否则应用其他元素（不为空）
+            System.out.println(opt.orElseGet(()->"Hi"));
+            System.out.println("----------------");
+            // 6、optional 所包含的元素不为null则应用所包含元素，否则应用其他元素（为空）
+            System.out.println(opt1.orElseGet(()->"Hi"));
+            System.out.println("----------------");
+        }
+    }
+    ```
 
-  **标准的函数式风格调用试例：**
+  - **标准的函数式风格调用试例：**
 
-  ```java
-  
-  package com.dennis.jdk8.optional;
-  
-  import java.util.Arrays;
-  import java.util.Collections;
-  import java.util.List;
-  import java.util.Optional;
-  
-  /**
-   * 描述： 标准函数式接口调用风格实例
-   *
-   * @author Dennis
-   * @version 1.0
-   * @date 2020/1/14 22:20
-   */
-  public class OptionalTest02 {
-      public static void main(String[] args) {
-          Company company = new Company();
-          Employee em1 = new Employee("张三", 30, null);
-          Employee em2 = new Employee("李四", 40, null);
-          Employee em3 = new Employee("王五", 50, null);
-  
-          List<Employee> employees = Arrays.asList(em1, em2, em3);
-          company.setName("guotie").setEmployees(employees);
-  
-          List<Employee> emList = company.getEmployees();
-  
-          Optional<List<Employee>> opt = Optional.ofNullable(emList);
-          // 标记老员工
-          List<Employee> result = opt.map(ems -> {
-              ems.forEach(employee -> {
-                  if (employee.getAge() >= 40) {
-                      employee.setTag("老员工");
-                  }
-              });
-              return ems;
-          }).orElse(Collections.emptyList());
-        System.out.println(result);
-      }
-  }
-  ```
+    ```java
+    
+    package com.dennis.jdk8.optional;
+    
+    import java.util.Arrays;
+    import java.util.Collections;
+    import java.util.List;
+    import java.util.Optional;
+    
+    /**
+    * 描述： 标准函数式接口调用风格实例
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/1/14 22:20
+    */
+    public class OptionalTest02 {
+        public static void main(String[] args) {
+            Company company = new Company();
+            Employee em1 = new Employee("张三", 30, null);
+            Employee em2 = new Employee("李四", 40, null);
+            Employee em3 = new Employee("王五", 50, null);
+    
+            List<Employee> employees = Arrays.asList(em1, em2, em3);
+            company.setName("guotie").setEmployees(employees);
+    
+            List<Employee> emList = company.getEmployees();
+    
+            Optional<List<Employee>> opt = Optional.ofNullable(emList);
+            // 标记老员工
+            List<Employee> result = opt.map(ems -> {
+                ems.forEach(employee -> {
+                    if (employee.getAge() >= 40) {
+                        employee.setTag("老员工");
+                    }
+                });
+                return ems;
+            }).orElse(Collections.emptyList());
+            System.out.println(result);
+        }
+    }
+    ```
 
 ## 方法引用实现函数式接口
 
@@ -953,241 +953,238 @@
   1. 串行流即：单线程执行
   2. 并行流即：多线程执行（调用parrelStream()方法）
 
-  ```Java
-  package com.dennis.jdk8.stream;
-  
-  import java.util.ArrayList;
-  import java.util.List;
-  import java.util.UUID;
-  import java.util.concurrent.TimeUnit;
-  
-  /**
-   * 描述：并发流parallelStream()与串行流stream()
-   *
-   * @author Dennis
-   * @version 1.0
-   * @date 2020/2/3 22:30
-   */
-  public class StreamTest06 {
-      public static void main(String[] args) {
-          List<String> list = new ArrayList<>(5000000);
-  
-          for (int i = 0; i < 5000000; i++) {
-              list.add(UUID.randomUUID().toString());
-          }
-  
-          // 排序
-          System.out.println("开始排序");
-          long startTime = System.nanoTime();
-  
-          // 串行流耗时：3820毫秒（单个线程执行）
-  //        list.stream().sorted().findFirst();
-  
-          // 并行流耗时：1324毫秒（多个线程执行）
-          list.parallelStream().sorted().findFirst();
-          long endTime = System.nanoTime();
-  
-          long duration = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
-          System.out.println("耗时：" + duration + "毫秒");
-      }
-  }
-  
-  ```
+    ```Java
+    package com.dennis.jdk8.stream;
+    
+    import java.util.ArrayList;
+    import java.util.List;
+    import java.util.UUID;
+    import java.util.concurrent.TimeUnit;
+    
+    /**
+    * 描述：并发流parallelStream()与串行流stream()
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/2/3 22:30
+    */
+    public class StreamTest06 {
+        public static void main(String[] args) {
+            List<String> list = new ArrayList<>(5000000);
+    
+            for (int i = 0; i < 5000000; i++) {
+                list.add(UUID.randomUUID().toString());
+            }
+    
+            // 排序
+            System.out.println("开始排序");
+            long startTime = System.nanoTime();
+    
+            // 串行流耗时：3820毫秒（单个线程执行）
+    //        list.stream().sorted().findFirst();
+    
+            // 并行流耗时：1324毫秒（多个线程执行）
+            list.parallelStream().sorted().findFirst();
+            long endTime = System.nanoTime();
+    
+            long duration = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
+            System.out.println("耗时：" + duration + "毫秒");
+        }
+    }
+    
+    ```
 
   3. 短路运算即：当前运算只要不满足条件，后续的运算将不再执行(与逻辑运算中强于&& ，强或|| 的原理类似)
 
-  ```java
-  package com.dennis.jdk8.stream;
-  
-  import java.util.Arrays;
-  import java.util.List;
-  import java.util.Optional;
-  import java.util.function.Supplier;
-  import java.util.stream.Collectors;
-  import java.util.stream.Stream;
-  
-  /**
-   * 描述：流的短路运算
-   *
-   * @author Dennis
-   * @version 1.0
-   * @date 2020/2/3 22:52
-   */
-  public class StreamTest07 {
-      public static void main(String[] args) {
-          // 需求：打印列表中长度为5的第一个字符串
-          Supplier<Stream<String>> supplier = () -> Stream.of("hello world", "hello", "world", "java hi");
-  
-          // 1
-          Optional<String> optional = supplier.get().filter(item -> item.length() == 5).findFirst();
-          optional.ifPresent(item -> {
-              System.out.println(item);
-              System.out.println(item.length());
-          });
-  
-          // 2
-          supplier.get().mapToInt(item -> {
-              int length = item.length();
-              // 问题：此处将会打印哪些字符串？(提示：流的链式调用存在短路运算特性)
-              System.out.println(item);
-              return length;
-          }).filter(length -> length == 5).findFirst().ifPresent(System.out::println);
-          
-          
-          // 需求：单词的拆分与去重
-          Supplier<Stream<String>> supplier1 = () -> Stream.of("hello world", "hello world hello", "hello welcome", "world hello");
-  
-          System.out.println("==============================");
-          // 错误方法
-          List<String[]> collect = supplier1.get().map(item -> item.split(" ")).distinct().collect(Collectors.toList());
-          collect.forEach(item -> Arrays.asList(item).forEach(System.out::println));
-  
-          System.out.println("==============================");
-          // 正确方法
-          Stream<String[]> result = supplier1.get().map(s -> s.split(" "));
-          // Stream<String[]> --> Stream<String>
-          result.flatMap(strArray -> Stream.of(strArray)).distinct().forEach(System.out::println);
-      }
-  }
-  
-  ```
+    ```java
+    package com.dennis.jdk8.stream;
+    
+    import java.util.Arrays;
+    import java.util.List;
+    import java.util.Optional;
+    import java.util.function.Supplier;
+    import java.util.stream.Collectors;
+    import java.util.stream.Stream;
+    
+    /**
+    * 描述：流的短路运算
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/2/3 22:52
+    */
+    public class StreamTest07 {
+        public static void main(String[] args) {
+            // 需求：打印列表中长度为5的第一个字符串
+            Supplier<Stream<String>> supplier = () -> Stream.of("hello world", "hello", "world", "java hi");
+    
+            // 1
+            Optional<String> optional = supplier.get().filter(item -> item.length() == 5).findFirst();
+            optional.ifPresent(item -> {
+                System.out.println(item);
+                System.out.println(item.length());
+            });
+    
+            // 2
+            supplier.get().mapToInt(item -> {
+                int length = item.length();
+                // 问题：此处将会打印哪些字符串？(提示：流的链式调用存在短路运算特性)
+                System.out.println(item);
+                return length;
+            }).filter(length -> length == 5).findFirst().ifPresent(System.out::println);
+            
+            
+            // 需求：单词的拆分与去重
+            Supplier<Stream<String>> supplier1 = () -> Stream.of("hello world", "hello world hello", "hello welcome", "world hello");
+    
+            System.out.println("==============================");
+            // 错误方法
+            List<String[]> collect = supplier1.get().map(item -> item.split(" ")).distinct().collect(Collectors.toList());
+            collect.forEach(item -> Arrays.asList(item).forEach(System.out::println));
+    
+            System.out.println("==============================");
+            // 正确方法
+            Stream<String[]> result = supplier1.get().map(s -> s.split(" "));
+            // Stream<String[]> --> Stream<String>
+            result.flatMap(strArray -> Stream.of(strArray)).distinct().forEach(System.out::println);
+        }
+    }
+    
+    ```
 
-## map与flatMap
+    ## map与flatMap
 
-- **map 与 flatMap的区别:**把Stream中 的每一个元素，映射成另外一个元素。
+    - **map 与 flatMap的区别:** 把Stream中 的每一个元素，映射成另外一个元素。
+        1. map生成的是个1:1映射，每个输入元素，都按照规则转换成为另外一个元素。还有一些场景，是一对多映射关系的，这时需要 flatMap。
 
-  
+        2. map和flatMap的方法声明是不一样的
+            <R> Stream<R>      map(Function<? super T, ? extends R> mapper);
+            <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper);
 
-  1. map生成的是个1:1映射，每个输入元素，都按照规则转换成为另外一个元素。还有一些场景，是一对多映射关系的，这时需要 flatMap。
+        3. 
+        ```java
+        // stream1中的每个元素都是一个List集合对象
+        Stream<List<Integer>> stream1 = Stream.of(
+                        Arrays.asList(1),
+                        Arrays.asList(2, 3),
+                        Arrays.asList(4, 5, 6)
+                    );
+                    Stream<Integer> stream2 = stream1.
+                    flatMap((e) -> e.stream());
+                    
+        stream2.forEach(e->System.out.println(e));//输出1 2 3 4 5 6
+        // flatMap 把 stream1 中的层级结构扁平化，就是将最底层元素抽出来放到一起，最终新的 stream2 里面已经没有 List 了，都是直接的数字。
+        
+        例子:
+        Stream<String> stream1 = Stream.of("tom.Li","lucy.Liu");
+        // flatMap方法把stream1中的每一个字符串都用[.]分割成了俩个字符串
+        // 最后返回了一个包含4个字符串的stream2
+        Stream<String> stream2 = stream1.flatMap(s->Stream.of(s.split("[.]")));
+        stream2.forEach(System.out::println);//输出	tom Li lucy Liu
+        ```
 
-  2. map和flatMap的方法声明是不一样的
-     <R> Stream<R>      map(Function<? super T, ? extends R> mapper);
-     <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper);
+        **例子：**
+        ```java
+        package com.dennis.jdk8.stream;
 
-  3. ```java
-     // stream1中的每个元素都是一个List集合对象
-     Stream<List<Integer>> stream1 = Stream.of(
-     				 Arrays.asList(1),
-     				 Arrays.asList(2, 3),
-     				 Arrays.asList(4, 5, 6)
-     			 );
-     			Stream<Integer> stream2 = stream1.
-     			flatMap((e) -> e.stream());
-     			
-     stream2.forEach(e->System.out.println(e));//输出1 2 3 4 5 6
-     // flatMap 把 stream1 中的层级结构扁平化，就是将最底层元素抽出来放到一起，最终新的 stream2 里面已经没有 List 了，都是直接的数字。
-     
-     例子:
-     Stream<String> stream1 = Stream.of("tom.Li","lucy.Liu");
-     // flatMap方法把stream1中的每一个字符串都用[.]分割成了俩个字符串
-     // 最后返回了一个包含4个字符串的stream2
-     Stream<String> stream2 = stream1.flatMap(s->Stream.of(s.split("[.]")));
-     stream2.forEach(System.out::println);//输出	tom Li lucy Liu
-     ```
+        import java.util.Arrays;
+        import java.util.List;
+        import java.util.function.Supplier;
+        import java.util.stream.Collectors;
+        import java.util.stream.Stream;
 
-  **例子：**
+        /**
+        * 描述：map与flatMap
+        * @author   Dennis
+        * @date     2020/2/4 16:39
+        * @version  1.0
+        */
+        public class StreamTest08 {
+            public static void main(String[] args) {
+                // 需求：单词的拆分并去重
+                Supplier<Stream<String>> supplier = () -> Stream.of("hello world", "hello world hello", "hello welcome", "world hello");
 
-  ```java
-  package com.dennis.jdk8.stream;
-  
-  import java.util.Arrays;
-  import java.util.List;
-  import java.util.function.Supplier;
-  import java.util.stream.Collectors;
-  import java.util.stream.Stream;
-  
-  /**
-  * 描述：map与flatMap
-  * @author   Dennis
-  * @date     2020/2/4 16:39
-  * @version  1.0
-  */
-  public class StreamTest08 {
-      public static void main(String[] args) {
-          // 需求：单词的拆分并去重
-          Supplier<Stream<String>> supplier = () -> Stream.of("hello world", "hello world hello", "hello welcome", "world hello");
-  
-          // 错误方法
-          List<String[]> collect = supplier.get().map(item -> item.split(" ")).distinct().collect(Collectors.toList());
-          collect.forEach(item -> Arrays.asList(item).forEach(System.out::println));
-  
-          System.out.println("==============================");
-          // 正确方法
-          Stream<String[]> result = supplier.get().map(s -> s.split(" "));
-          // Stream<String[]> --> Stream<String>
-          // 调用flatMap后返回的stream中将不在有数组String[],而直接存储最底层数据string为元素类型
-          result.flatMap(strArray -> Stream.of(strArray)).distinct().forEach(System.out::println);
-      }
-  }
-  ```
+                // 错误方法
+                List<String[]> collect = supplier.get().map(item -> item.split(" ")).distinct().collect(Collectors.toList());
+                collect.forEach(item -> Arrays.asList(item).forEach(System.out::println));
+
+                System.out.println("==============================");
+                // 正确方法
+                Stream<String[]> result = supplier.get().map(s -> s.split(" "));
+                // Stream<String[]> --> Stream<String>
+                // 调用flatMap后返回的stream中将不在有数组String[],而直接存储最底层数据string为元素类型
+                result.flatMap(strArray -> Stream.of(strArray)).distinct().forEach(System.out::println);
+            }
+        }
+        ```
 
 ## collector搜集器
 
-- 分组/分区**
+- **分组/分区**
 
-  ```java
-  package com.dennis.jdk8.stream;
-  
-  import lombok.AllArgsConstructor;
-  import lombok.Data;
-  
-  import java.util.List;
-  import java.util.Map;
-  import java.util.function.Supplier;
-  import java.util.stream.Collectors;
-  import java.util.stream.Stream;
-  
-  /**
-   * 描述：分组与分区
-   *
-   * @author Dennis
-   * @version 1.0
-   * @date 2020/2/4 17:11
-   */
-  public class StreamTest09 {
-      public static void main(String[] args) {
-          // 对比SQL语句中的分组查询
-          Student s1 = new Student("zhangsan", 100, 20);
-          Student s2 = new Student("lisi", 90, 20);
-          Student s3 = new Student("wangwu", 90, 30);
-          Student s4 = new Student("zhangsan", 80, 40);
-  
-          Supplier<Stream<Student>> supplier = () -> Stream.of(s1, s2, s3, s4);
-          
-          // SELECT * FROM tb_student GROUP BY name
-          // 按照姓名分组
-          Map<String, List<Student>> listMapKeyName = supplier.get().collect(Collectors.groupingBy(Student::getName));
-          System.out.println(listMapKeyName);
-          System.out.println("========================");
-          
-          // SELECT * FROM tb_student GROUP BY score
-          // 按照分数分组
-          Map<Integer, List<Student>> listMapKeyScore = supplier.get().collect(Collectors.groupingBy(Student::getScore));
-          System.out.println(listMapKeyScore);
-          System.out.println("========================");
-  
-  
-          //SELECT name,count(*) FROM tb_student GROUP BY name
-          //按照姓名分组并统计个数：
-          Map<String, Long> countResult = supplier.get().collect(Collectors.groupingBy(Student::getName, Collectors.counting()));
-          System.out.println(countResult);
-  
-          // 分区：只能分两个区，满足指定条件要求的元素一个区，其他所有的元素另一个区
-          Map<Boolean, List<Student>> listMap = supplier.get().collect(Collectors.partitioningBy(student -> student.getScore() > 90));
-          System.out.println(listMap);
-      }
-  
-      @Data
-      @AllArgsConstructor
-      public static class Student {
-          private String name;
-          private Integer score;
-          private Integer age;
-      }
-  }
-  ```
+    ```java
+    package com.dennis.jdk8.stream;
+    
+    import lombok.AllArgsConstructor;
+    import lombok.Data;
+    
+    import java.util.List;
+    import java.util.Map;
+    import java.util.function.Supplier;
+    import java.util.stream.Collectors;
+    import java.util.stream.Stream;
+    
+    /**
+    * 描述：分组与分区
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/2/4 17:11
+    */
+    public class StreamTest09 {
+        public static void main(String[] args) {
+            // 对比SQL语句中的分组查询
+            Student s1 = new Student("zhangsan", 100, 20);
+            Student s2 = new Student("lisi", 90, 20);
+            Student s3 = new Student("wangwu", 90, 30);
+            Student s4 = new Student("zhangsan", 80, 40);
+    
+            Supplier<Stream<Student>> supplier = () -> Stream.of(s1, s2, s3, s4);
+            
+            // SELECT * FROM tb_student GROUP BY name
+            // 按照姓名分组
+            Map<String, List<Student>> listMapKeyName = supplier.get().collect(Collectors.groupingBy(Student::getName));
+            System.out.println(listMapKeyName);
+            System.out.println("========================");
+            
+            // SELECT * FROM tb_student GROUP BY score
+            // 按照分数分组
+            Map<Integer, List<Student>> listMapKeyScore = supplier.get().collect(Collectors.groupingBy(Student::getScore));
+            System.out.println(listMapKeyScore);
+            System.out.println("========================");
+    
+    
+            //SELECT name,count(*) FROM tb_student GROUP BY name
+            //按照姓名分组并统计个数：
+            Map<String, Long> countResult = supplier.get().collect(Collectors.groupingBy(Student::getName, Collectors.counting()));
+            System.out.println(countResult);
+    
+            // 分区：只能分两个区，满足指定条件要求的元素一个区，其他所有的元素另一个区
+            Map<Boolean, List<Student>> listMap = supplier.get().collect(Collectors.partitioningBy(student -> student.getScore() > 90));
+            System.out.println(listMap);
+        }
+    
+        @Data
+        @AllArgsConstructor
+        public static class Student {
+            private String name;
+            private Integer score;
+            private Integer age;
+        }
+    }
+    ```
 
-- **collector接口详解：**该接口知识点多参考Collector JAVA DOC文档
+- **collector接口详解：** 该接口知识点多参考Collector JAVA DOC文档
 
   1. 理解Collector<T,A,R> 中三个泛型参数类型的具体含义
   2. 掌握四个方法之间的关系
@@ -1201,112 +1198,180 @@
 
    **A中间结果类型  T流中元素类型  R最终返回类型**
   
-- **Collectors辅助类:**其本质就是一个搜集器对象的工厂类，通过静态方法创建些常见的CollectorImpl对象
+- **Collectors辅助类:** 其本质就是一个搜集器对象的工厂类，通过静态方法创建些常见的CollectorImpl对象
+    1. 预定义collector对象案例:
 
-  1. 预定义collector对象案例:
+        ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200205204004.png)
+    
+    2. collector可结合性（associativity）
+    
+        ```java
+        package com.dennis.jdk8.stream;
 
-     ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200205204004.png)
-  
-	2. collector可结合性（associativity）
-  
-     ```java
-     package com.dennis.jdk8.stream;
-   
-     import com.dennis.jdk8.stream.StreamTest09.Student;
-     
-     import java.util.*;
-     import java.util.function.Supplier;
-     import java.util.stream.Collectors;
-     import java.util.stream.Stream;
-     
-     /**
-      * 描述：Collector辅助类案例，收集器的多级分组与多级分区
-      *
-      * @author Dennis
-      * @version 1.0
-      * @date 2020/2/5 21:18
-      */
-     public class StreamTest10 {
-         public static void main(String[] args) {
-             Student s1 = new Student("zhangsan", 90, 20);
-             Student s2 = new Student("lisi", 100, 20);
-             Student s3 = new Student("wangwu", 80, 20);
-             Student s4 = new Student("zhangsan", 80, 20);
-             Student s5 = new Student("zhaoliu", 70, 30);
-     
-             Supplier<Stream<Student>> supplier = () -> Stream.of(s1, s2, s3, s4, s5);
-     
-             // Collectors.toList()
-             System.out.println(supplier.get().collect(Collectors.toList()));
-             System.out.println("-------------------");
-     
-             // Collectors.counting()
-             System.out.println(supplier.get().collect(Collectors.counting()));
-             System.out.println(supplier.get().count());
-             System.out.println("-------------------");
-     
-             // minBy(), maxBy(), averageInt(), summingInt(),  summarizingInt()
-       supplier.get().collect(Collectors.minBy(Comparator.comparingInt(Student::getScore))).ifPresent(System.out::println);
-       supplier.get().collect(Collectors.maxBy(Comparator.comparingInt(Student::getScore))).ifPresent(System.out::println);
-             System.out.println("average score:" + supplier.get().collect(Collectors.averagingInt(Student::getScore)));
-             System.out.println("summing score:" + supplier.get().collect(Collectors.summingInt(Student::getScore)));
-             IntSummaryStatistics summaryStatistics = supplier.get().collect(Collectors.summarizingInt(Student::getScore));
-             System.out.println(summaryStatistics.toString());
-             System.out.println("-------------------");
-     
-             // join()
-             System.out.println(supplier.get().map(Student::getName).collect(Collectors.joining()));
-             System.out.println(supplier.get().map(Student::getName).collect(Collectors.joining(",")));
-             System.out.println(supplier.get().map(Student::getName).collect(Collectors.joining(",", "<begin>", "<end>")));
-     
-             // 多级分组（体现出collector的结合性）
-             // 先安分数分组再按姓名分组
-             Map<Integer, Map<String, List<Student>>> map1 = supplier.get()
-                     .collect(Collectors.groupingBy(Student::getScore, Collectors.groupingBy(Student::getName)));
-             System.out.println(map1);
-             System.out.println("-------------------");
-     
-             // 大于80的分区，其中大于90的又分一区
-             Map<Boolean, Map<Boolean, List<Student>>> map2 = supplier.get()
-                     .collect(Collectors.partitioningBy(s -> s.getScore() >= 80, Collectors.partitioningBy(s -> s.getScore() >= 90)));
-             System.out.println(map2);
-             System.out.println("-------------------");
-     
-             // 大于80分区并统计对应元素个数
-             Map<Boolean, Long> map3 = supplier.get().collect(Collectors.partitioningBy(s -> s.getScore() >= 80, Collectors.counting()));
-             System.out.println(map3);
-             System.out.println("-------------------");
-     
-             // 先按名字分组，再找出各组中分数最小元素
-             Map<String, Student> map4 = supplier.get()
-                     .collect(Collectors.groupingBy(Student::getName, Collectors.collectingAndThen(Collectors.minBy(Comparator.comparingInt(Student::getScore)), Optional::get)));
-     		// 建议多使用该种方式
-             Map<String, Optional<Student>> map5 = supplier.get()
-                     .collect(Collectors.groupingBy(Student::getName, Collectors.minBy(Comparator.comparingInt(Student::getScore))));
-             System.out.println(map4);
-             System.out.println(map5);
-             System.out.println("-------------------");
-         }
-     }
-     
-     ```
+        import com.dennis.jdk8.stream.StreamTest09.Student;
+        
+        import java.util.*;
+        import java.util.function.Supplier;
+        import java.util.stream.Collectors;
+        import java.util.stream.Stream;
+        
+        /**
+        * 描述：Collector辅助类案例，收集器的多级分组与多级分区
+        *
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/2/5 21:18
+        */
+        public class StreamTest10 {
+            public static void main(String[] args) {
+                Student s1 = new Student("zhangsan", 90, 20);
+                Student s2 = new Student("lisi", 100, 20);
+                Student s3 = new Student("wangwu", 80, 20);
+                Student s4 = new Student("zhangsan", 80, 20);
+                Student s5 = new Student("zhaoliu", 70, 30);
+        
+                Supplier<Stream<Student>> supplier = () -> Stream.of(s1, s2, s3, s4, s5);
+        
+                // Collectors.toList()
+                System.out.println(supplier.get().collect(Collectors.toList()));
+                System.out.println("-------------------");
+        
+                // Collectors.counting()
+                System.out.println(supplier.get().collect(Collectors.counting()));
+                System.out.println(supplier.get().count());
+                System.out.println("-------------------");
+        
+                // minBy(), maxBy(), averageInt(), summingInt(),  summarizingInt()
+        supplier.get().collect(Collectors.minBy(Comparator.comparingInt(Student::getScore))).ifPresent(System.out::println);
+        supplier.get().collect(Collectors.maxBy(Comparator.comparingInt(Student::getScore))).ifPresent(System.out::println);
+                System.out.println("average score:" + supplier.get().collect(Collectors.averagingInt(Student::getScore)));
+                System.out.println("summing score:" + supplier.get().collect(Collectors.summingInt(Student::getScore)));
+                IntSummaryStatistics summaryStatistics = supplier.get().collect(Collectors.summarizingInt(Student::getScore));
+                System.out.println(summaryStatistics.toString());
+                System.out.println("-------------------");
+        
+                // join()
+                System.out.println(supplier.get().map(Student::getName).collect(Collectors.joining()));
+                System.out.println(supplier.get().map(Student::getName).collect(Collectors.joining(",")));
+                System.out.println(supplier.get().map(Student::getName).collect(Collectors.joining(",", "<begin>", "<end>")));
+        
+                // 多级分组（体现出collector的结合性）
+                // 先安分数分组再按姓名分组
+                Map<Integer, Map<String, List<Student>>> map1 = supplier.get()
+                        .collect(Collectors.groupingBy(Student::getScore, Collectors.groupingBy(Student::getName)));
+                System.out.println(map1);
+                System.out.println("-------------------");
+        
+                // 大于80的分区，其中大于90的又分一区
+                Map<Boolean, Map<Boolean, List<Student>>> map2 = supplier.get()
+                        .collect(Collectors.partitioningBy(s -> s.getScore() >= 80, Collectors.partitioningBy(s -> s.getScore() >= 90)));
+                System.out.println(map2);
+                System.out.println("-------------------");
+        
+                // 大于80分区并统计对应元素个数
+                Map<Boolean, Long> map3 = supplier.get().collect(Collectors.partitioningBy(s -> s.getScore() >= 80, Collectors.counting()));
+                System.out.println(map3);
+                System.out.println("-------------------");
+        
+                // 先按名字分组，再找出各组中分数最小元素
+                Map<String, Student> map4 = supplier.get()
+                        .collect(Collectors.groupingBy(Student::getName, Collectors.collectingAndThen(Collectors.minBy(Comparator.comparingInt(Student::getScore)), Optional::get)));
+            // 建议多使用该种方式
+                Map<String, Optional<Student>> map5 = supplier.get()
+                        .collect(Collectors.groupingBy(Student::getName, Collectors.minBy(Comparator.comparingInt(Student::getScore))));
+                System.out.println(map4);
+                System.out.println(map5);
+                System.out.println("-------------------");
+            }
+        }
+        
+        ```
      
 ## Comparator比较器
-1. 通用比较方法、
-2. 特定比较方法
+- 通用比较方法
+    - Comparator.comparing()
+- 特定比较方法(已知比较类型的情况下，推荐使用特定比较方法)
+    - Comparator.comparingInt()
+    - Comparetor.comparingLong()
+    - Comparetor.comparingDouble()
+- 串联比较方法(只有当当前比较器的比较结果等于零时，thenComparing()才生效)
+    - Comparator.thenComparing()
+    - Comparetor.thenComparingInt()
+    - Comparetor.thenComparingLong()
+    - Comparetor.thenComparingDouble()
+- **案例：**
+    ```java
+    package com.dennis.jdk8.stream;
 
-```java
-sdjflj
-```
-3. 串联比较方法thencompararing
+    import java.util.Arrays;
+    import java.util.Collections;
+    import java.util.Comparator;
+    import java.util.List;
+    import java.util.function.Supplier;
+    import java.util.stream.Collector;
+    import java.util.stream.Collectors;
+    import java.util.stream.Stream;
 
-   
+    /**
+    * 描述： Comparator接口
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/2/6 21:43
+    */
+    public class StreamTest11 {
+        public static void main(String[] args) {
+            Supplier<Stream<String>> supplier1 = () -> Stream.of("hello", "world", "nihao", "welcome");
+            Supplier<List<String>> supplier2 = () -> Arrays.asList("hello", "world", "nihao", "welcome");
 
+            // 通用型方法comparing()
+            List<String> l1 = supplier2.get();
+            Collections.sort(l1, (str1, str2) -> str1.length() - str2.length());
+            System.out.println(l1);
+            System.out.println("=================");
 
+            List<String> l2 = supplier2.get();
+            Collections.sort(l2, Comparator.comparing(String::length).reversed());
+            System.out.println(l2);
+            System.out.println("=================");
 
+            // 特定比较方法
+            List<String> l3 = supplier2.get();
+    //        Collections.sort(l3, Comparator.comparingInt((str) -> str.length()).reversed()); // 不进行强制性转换无法通过编译
+            Collections.sort(l3, Comparator.comparingInt((String str) -> str.length()).reversed()); // 不进行强制性转换能通过编译
+            System.out.println(l3);
+            System.out.println("=================");
 
+            List<String> l4 = supplier2.get();
+            Collections.sort(l4, Comparator.comparingInt(String::length).reversed());
+            System.out.println(l4);
 
+            // 串联比较器
+        // 先按照长度进行比较，再按照ASCII码比较（不区分大小写）
+        List<String> l5 = supplier.get();
+        Collections.sort(l5, Comparator.comparingInt(String::length).thenComparing(String.CASE_INSENSITIVE_ORDER));
+        // Collections.sort(l5,Comparator.comparingInt(String::length).thenComparing((item1,item2)->item1.toLowerCase().compareTo(item2.toLowerCase())));
+        System.out.println(l5);
+        System.out.println("=================");
 
+        //*****************************************************************************//
+        //************************注意:l6排序结果和l7排序结果的区别**************************//
+        //*****************************************************************************//
+
+        // 先按照长度进行比较，再按照ASCII码比较（不区分大小写)并进行顺序反转
+        List<String> l6 = supplier.get();
+        Collections.sort(l6, Comparator.comparingInt(String::length).thenComparing(String::toLowerCase, Comparator.reverseOrder()));
+        System.out.println(l6);//[world, nihao, hello, welcome] 可以看到welcome并没有参与顺序反转->why?
+        System.out.println("=================");
+
+        // 先按照长度进行比较，再按照ASCII码比较（不区分大小写)，最后全部顺序反转
+        List<String> l7 = supplier.get();
+        Collections.sort(l7, Comparator.comparingInt(String::length).thenComparing(String.CASE_INSENSITIVE_ORDER).reversed());
+        System.out.println(l7);//[welcome, world, nihao, hello] 可以看到welcome参与了顺序反转->why?
+        System.out.println("=================");
+        }
+    }
+    ```
 
 
 
