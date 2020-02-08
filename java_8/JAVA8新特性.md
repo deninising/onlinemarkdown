@@ -1294,9 +1294,13 @@
 ## Comparator比较器
 1. 通用比较方法、
 2. 特定比较方法
+
+```java
+sdjflj
+```
 3. 串联比较方法thencompararing
 
-
+   
 
 
 
