@@ -1286,7 +1286,7 @@
         }
         
         ```
-     
+    
 
 ## 自定义收集器MySellector
 - **要点1：** 自定义收集器需要实现Collector接口，并逐一实现接口内部提供的抽象方法：
@@ -1375,6 +1375,7 @@
 
 ## Comparator比较器
 - 通用比较方法
+    
     - Comparator.comparing()
 - 特定比较方法(已知比较类型的情况下，推荐使用特定比较方法)
     - Comparator.comparingInt()
@@ -1458,3 +1459,48 @@
         }
     }
     ```
+## Stream源码解析
+- AutoCloseable接口：用来自动关闭文件资源或socket连接资源
+    - 官方解释：An object that may hold resources (such as file or socket handles) until it is closed. The {@link #close()} method of an {@code AutoCloseable} object is called automatically when exiting a {@code try}-with-resources block for which the object has been declared in the resource specification header. This construction ensures prompt release, avoiding resource exhaustion exceptions and errors that may otherwise occur.
+    - 案例：
+    ```java
+    package com.dennis.jdk8.streamdeeplearn;
+
+    /**
+    * 描述：通过实现AutoCloseable接口，和采用try-with-resource代码块的方式声明将使用
+    * 的对象，在执行完该代码块时，声明对象中的close()方法将自动被调用以释放资源
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/2/13 22:12
+    */
+    public class MyAutoCloseableImpl implements AutoCloseable {
+
+        @Override
+        public void close() throws Exception {
+            System.out.println("automatically invoke close to release resource ");
+        }
+
+        private void doSth() {
+            System.out.println("to do something with the resource holding object ...");
+        }
+
+        public static void main(String[] args) throws Exception {
+            try (MyAutoCloseableImpl myImpl = new MyAutoCloseableImpl()) {
+                // todo
+                myImpl.doSth();
+                // todo
+                System.out.println("代码块将执行完毕。。。");
+            }
+            System.out.println("代码块已执行完毕。。。");
+        }
+
+    }
+
+    ```
+- BaseStream.close()方法重写自AutoCloseable接口，因此可以采用try-with-source方式来声明一个流对象（内部元素一般为文件、io或socket，否则不必对流采取关闭），代码块执行完毕时将自动触发BaseStream.onClose()方法
+    - onClose()方法官方解释：
+    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200213223739.png)
+- BaseStream <T,S extends BaseStream<T,S>> **要点：** 为什么会定义一个S extends BaseStream<T,S>这样的泛型参数?--->为流的中间操作返回的新的流对象提供泛型参数限定，即:新的流对象的类型为:S extends BaseStream<T,S>
+- BaseStream.onClose()方法
+- Spliterator<T> 分割迭代器
