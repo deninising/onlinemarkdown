@@ -1508,4 +1508,3 @@
 - Sink:引水槽，维护操作动作的地方，可将所有的操作连接成单项链表
 - **架构图：**
     ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200219225502.png)
-
