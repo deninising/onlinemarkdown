@@ -1502,5 +1502,10 @@
     - onClose()方法官方解释：
     ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200213223739.png)
 - BaseStream <T,S extends BaseStream<T,S>> **要点：** 为什么会定义一个S extends BaseStream<T,S>这样的泛型参数?--->为流的中间操作返回的新的流对象提供泛型参数限定，即:新的流对象的类型为:S extends BaseStream<T,S>
-- BaseStream.onClose()方法
-- Spliterator<T> 分割迭代器
+
+- Spliterator<T> 分割迭代器：用来维护和遍历源中的元素
+- ReferencePileline:流的一个子类，何以保存上下游的Stream对象，使整个流源、中间操作和终止操作形成双向链表结构。
+- Sink:引水槽，维护操作动作的地方，可将所有的操作连接成单项链表
+- **架构图：**
+    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200219225502.png)
+
