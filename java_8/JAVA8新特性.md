@@ -27,7 +27,7 @@
 
   ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1578226018767.png)
 
-- **基本表达式**
+- **lambda基本表达式**
 
   ```java
   a.function(
