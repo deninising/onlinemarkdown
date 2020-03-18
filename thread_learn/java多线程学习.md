@@ -731,7 +731,7 @@
     ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200229224446.png)
 - **异步阻塞：**
     ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200229224525.png)
-## 消费者和生产者模式
+### 消费者和生产者模式
 - **单线程版：**
     ```java
     package com.dennis.conccurency.chapter07;
@@ -949,7 +949,7 @@
 ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200301111757.png)
 ## 自定义显示锁
 - **synchronised关键字的缺陷：是一种排他式的数据同步机制，且当线程多个线程在竞争锁资源的时候会存在以下缺陷**
-    - 无法控制阻塞时常
+    - 无法控制阻塞时长
     - 阻塞不可以被中断
 - **顶层接口：**
     ```java
@@ -978,6 +978,9 @@
 
         void unLock();
 
+        /**
+        *获取阻塞中的线程
+        */
         List<Thread> getBlockedThreads();
 
     }
@@ -1016,6 +1019,7 @@
         public void lock() throws InterruptedException {
             synchronized (this) {
                 while (locked) {
+                    // 可能是唤醒的线程也可能是一个新的线程
                     if (!blockedThreadList.contains(Thread.currentThread()))
                         blockedThreadList.add(Thread.currentThread());
                     this.wait();
@@ -1040,6 +1044,7 @@
                     // 判断是否超时,再决定是否有必要继续等待
                     if (timeAllowedToBlock <= 0)
                         throw new TimeoutException("the time of getting lock has been timeout");
+                    // 可能是唤醒的线程也可能是一个新的线程
                     if (!blockedThreadList.contains(Thread.currentThread()))
                         blockedThreadList.add(Thread.currentThread());
                     wait(millis);
@@ -1053,6 +1058,7 @@
 
         @Override
         public void unLock() {
+            // 利用锁的可重入性（只有能够加锁的线程才能解锁）
             synchronized (this) {
                 if (this.currentThread == Thread.currentThread()) {
                     this.locked = false;
@@ -1191,6 +1197,851 @@
     【3测试显示锁抢锁时可自定中断的特性】
     Tb线程被主动中断
     ```
+## 自定义线程池
+- **框架示意图**
+    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200313192234.png)
+- **代码：详见com.dennis.conccurency.chapter10**
+
+## 类加载器
+- **JVM内置三大类加载器：**
+    - 根加载器：Bootstrap ClassLoader
+    - 扩展加载器：Ext ClassLoader
+    - 系统加载器：Application ClassLoader
+- **三者关系图：**
+![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200316120856.png)
+- **实例代码：**
+    - 根加载器:最顶层加载器，没有任何父类加载器，有C++编写，负责加载虚拟机核心类库
+        ````java
+        package com.dennis.conccurency.chapter11;
+
+        import java.util.Arrays;
+
+        /**
+        * 描述：根类加载器
+        *
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/3/15 11:28
+        */
+        public class BootStrapClassLoader {
+            public static void main(String[] args) {
+                // 根类加载器没有指向它的引用
+                ClassLoader classLoader = String.class.getClassLoader();
+                System.out.println("bootStrap:" + classLoader);
+
+                // 根类加载器所在的加载路径
+                String bootPath = System.getProperty("sun.boot.class.path");
+                Arrays.asList(bootPath.split(";")).forEach(System.out::println);
+            }
+        }
+        ````
+    - 结果
+        ````text
+        bootStrap:null
+        D:\develop\java\jdk8\jre\lib\resources.jar
+        D:\develop\java\jdk8\jre\lib\rt.jar
+        D:\develop\java\jdk8\jre\lib\sunrsasign.jar
+        D:\develop\java\jdk8\jre\lib\jsse.jar
+        D:\develop\java\jdk8\jre\lib\jce.jar
+        D:\develop\java\jdk8\jre\lib\charsets.jar
+        D:\develop\java\jdk8\jre\lib\jfr.jar
+        D:\develop\java\jdk8\jre\classes
+        ````
+    - 扩展加载器：由Java编写，父加载器为根加载器，主要加载jre/lib/ext下的类
+        ````java
+        package com.dennis.conccurency.chapter11;
+
+        import java.util.Arrays;
+        /**
+        * 描述：扩展类加载器,加载JAVA_HOME下的jre/lb/ext子目录中的类库
+        *
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/3/15 11:38
+        */
+        public class ExtClassLoader {
+            public static void main(String[] args) {
+                // 获取加载资源的路径
+                String[] splits = System.getProperty("java.ext.dirs").split(";");
+                Arrays.asList(splits).forEach(System.out::println);
+            }
+        }
+        ````
+    - 结果
+        ````text
+        D:\develop\java\jdk8\jre\lib\ext
+        C:\WINDOWS\Sun\Java\lib\ext
+        ````
+    - 系统加载器：最常见的加载器，加载classPath下的类库资源，多有的第三方jar包也有它负责加载
+        ````java
+        package com.dennis.conccurency.chapter11;
+
+        import java.util.Arrays;
+
+        /**
+        * 描述： 系统类加载器,加载classPath类路径下的所有第三方jar中的类资源
+        *
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/3/15 11:42
+        */
+        public class ApplicationClassLoader {
+            public static void main(String[] args) {
+                System.out.println();
+                String[] paths = System.getProperty("java.class.path").split(";");
+                Arrays.asList(paths).forEach(System.out::println);
+
+                System.out.println(ApplicationClassLoader.class.getClassLoader());
+            }
+        }
+        ````
+    - 结果
+        ````text
+        D:\develop\java\jdk8\jre\lib\charsets.jar
+        D:\develop\java\jdk8\jre\lib\deploy.jar
+        D:\develop\java\jdk8\jre\lib\ext\access-bridge-64.jar
+        D:\develop\java\jdk8\jre\lib\ext\cldrdata.jar
+        D:\develop\java\jdk8\jre\lib\ext\dnsns.jar
+        D:\develop\java\jdk8\jre\lib\ext\jaccess.jar
+        D:\develop\java\jdk8\jre\lib\ext\jfxrt.jar
+        D:\develop\java\jdk8\jre\lib\ext\localedata.jar
+        D:\develop\java\jdk8\jre\lib\ext\nashorn.jar
+        D:\develop\java\jdk8\jre\lib\ext\sunec.jar
+        D:\develop\java\jdk8\jre\lib\ext\sunjce_provider.jar
+        D:\develop\java\jdk8\jre\lib\ext\sunmscapi.jar
+        D:\develop\java\jdk8\jre\lib\ext\sunpkcs11.jar
+        D:\develop\java\jdk8\jre\lib\ext\zipfs.jar
+        D:\develop\java\jdk8\jre\lib\javaws.jar
+        D:\develop\java\jdk8\jre\lib\jce.jar
+        D:\develop\java\jdk8\jre\lib\jfr.jar
+        D:\develop\java\jdk8\jre\lib\jfxswt.jar
+        D:\develop\java\jdk8\jre\lib\jsse.jar
+        D:\develop\java\jdk8\jre\lib\management-agent.jar
+        D:\develop\java\jdk8\jre\lib\plugin.jar
+        D:\develop\java\jdk8\jre\lib\resources.jar
+        D:\develop\java\jdk8\jre\lib\rt.jar
+        D:\Code\github\thread_learn\target\classes
+        C:\IntelliJ IDEA\lib\idea_rt.jar
+        sun.misc.Launcher$AppClassLoader@18b4aac2
+        ````
+- 自定义加载器：为了打破双亲委派机制通常会采用自定义加载器
+    - 实例代码
+        ````java
+        package com.dennis.conccurency.chapter11;
+
+        import java.io.ByteArrayOutputStream;
+        import java.nio.file.Files;
+        import java.nio.file.Path;
+        import java.nio.file.Paths;
+
+        /**
+        * 描述：自定义类加载器
+        *
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/3/15 12:24
+        */
+        public class MyClassLoader extends ClassLoader {
+            // 定义默认的class存放路径
+            private final static Path DEFAULT_CLASS_DIR = Paths.get("E:", "classLoader1");
+
+            private final Path classDir;
+
+            // 使用默认的class路径
+            public MyClassLoader() {
+                super();
+                this.classDir = DEFAULT_CLASS_DIR;
+            }
+
+            // 允许传入指定路径
+            public MyClassLoader(Path classDir) {
+                super();
+                this.classDir = classDir;
+            }
+
+            // 指定class路径的同时，指定父类加载器
+            public MyClassLoader(Path classDir, ClassLoader parent) {
+                super(parent);
+                this.classDir = classDir;
+            }
+
+            // 重写父类的findClass方法
+            @Override
+            protected Class<?> findClass(String name) throws ClassNotFoundException {
+                // 读取class的二进制数据
+                byte[] bytes = readClassByte(name);
+                // 若为空则抛出classNotFoundException
+                if (bytes == null) {
+                    throw new ClassNotFoundException("can not find the class :" + name);
+                }
+                // 调用defineClass方法定义class
+                Class<?> aClass = this.defineClass(name, bytes, 0, bytes.length);
+                return aClass;
+            }
+
+            // 将class文件读入内存
+            private byte[] readClassByte(String name) throws ClassNotFoundException {
+                // 将包名分隔符转换为文件分隔符
+                String classPath = name.replace(".", "/");
+                Path classFullPath = classDir.resolve(Paths.get(classPath + ".class"));
+                if (!classFullPath.toFile().exists()) {
+                    throw new ClassNotFoundException("the class name:" + name + " not found");
+                }
+
+                try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                    Files.copy(classFullPath, outputStream);
+                    return outputStream.toByteArray();
+                } catch (Exception e) {
+                    throw new ClassNotFoundException("load the class " + name + "occur error:", e);
+                }
+            }
+
+            @Override
+            public String toString() {
+                return "MyClassLoader{" +
+                        "classDir=" + classDir +
+                        '}';
+            }
+        }
+        ````
+    - 测试代码
+        ````java
+        package com.dennis.conccurency.chapter11;
+
+        import java.lang.reflect.InvocationTargetException;
+        import java.lang.reflect.Method;
+
+        /**
+        * 描述：自定义类加载器的定义(没有屏蔽双亲委派机制)
+        *
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/3/15 13:01
+        */
+        public class MyClassLoaderTest {
+            public static void main(String[] args)
+                    throws ClassNotFoundException,
+                    IllegalAccessException,
+                    InstantiationException,
+                    NoSuchMethodException,
+                    InvocationTargetException {
+                // 申明一个类加载器
+                MyClassLoader myClassLoader = new MyClassLoader();
+                // 使用myClassLoader加载class文件(class文件已编译到对用的文件夹中)
+                Class<?> aClass = myClassLoader.loadClass("com.dennis.conccurency.chapter11.HelloWorld");
+                System.out.println(aClass.getClassLoader());
+
+                // 到该步骤以前，虽然类被加载,且输出了类的加载器信息,但是HelloWorld.java中的静态代码块并没有被输出,
+                // 因为类的loadClass方法并不会导致类的主动初始化,其仅仅完成了加载过程中的加载阶段而已
+                Object helloWorld = aClass.newInstance();// 主动加载,则静态代码块中的内容将初始化输出
+                System.out.println(helloWorld);
+
+                Method welcome = aClass.getMethod("welcome");
+                String result = (String) welcome.invoke(helloWorld);
+                System.out.println(result);
+            }
+        }
+        ````
+    - 结果
+        ````text
+        MyClassLoader{classDir=E:\classLoader1}
+        hello world class is initialized!
+        com.dennis.conccurency.chapter11.HelloWorld@1540e19d
+        Hello world!
+        ````
+## 双亲委托机制
+- **框架示意图**
+![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200316123223.png)
+**说明：部分类容详见第九章和第十章（建议多次阅读）**
+
 # 阶段二：多线程设计模式详解
+## 重要的两种单例模式
+- **holder模式下的单例**
+    ````java
+    package com.dennis.conccurency.chapter12;
+
+    /**
+    * 描述：Holder版单例模式
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/16 12:01
+    */
+    public class Singleton4Holder {
+        // 实例变量
+        private byte[] data = new byte[1024];
+
+        // 构造器私有化
+        private Singleton4Holder() {
+        }
+
+        // 在静态内部类中持有单例对象,并且可被直接初始化
+        private static class Holder {
+            private static Singleton4Holder INSTANCE = new Singleton4Holder();
+        }
+
+        // 对提供getInstance方法,获取单例对象
+        public Singleton4Holder getInstance() {
+            return Holder.INSTANCE;
+        }
+    }
+    ````
+    - 解释说明：在Singleton类中并没有instance的静态成员，而是将其放到了静态内部类Holder之中，因此在Singleton类的初始化过程中并不会创建Singleton的实例，Holder类中定义了Singleton的静态变量,并且直接进行了实例化，当Holder被主动引用的时候则会创建Singleton的实例，Singleton实例的创建过程在Java程序编译时期收集至<clinit>()方法中，该方法又是同步方法，同步方法可以保证内存的可见性、JVM指令的顺序性和原子性、Holder方式的单例设计是最好的设计之一，也是目前使用比较广的设计之一。
+- **利用枚举实现单例**
+    ````java
+    package com.dennis.conccurency.chapter12;
+
+    /**
+    * 描述： 【特点一】枚举类版本的单例模式,来源《Effective Java》,
+    *       【特点二】利用枚举类本身就是final且只会被实例化一次的特性,
+    *       【特点三】当且仅当枚举只有一个枚举属性时,该枚举属性就是该类型的一个实例 
+    *       
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/16 13:15
+    */
+    public enum Singleton4Enum {
+        INSTANCE;
+
+        // 实例变量
+        byte[] data = new byte[1024];
+
+        public static Singleton4Enum getInstance() {
+            return INSTANCE;
+        }
+
+        public void calculate(){
+            // handle the data......
+            System.out.println("handle the data......");
+        }
+    }
+    ````
+- 测试代码
+    ````java
+    package com.dennis.conccurency.chapter12;
+    /**
+    * 描述：测试类
+    * @author   Dennis
+    * @date     2020/3/16 13:21
+    * @version  1.0
+    */
+    public class Test4Enum {
+        public static void main(String[] args) {
+            Singleton4Enum singleton = Singleton4Enum.getInstance();
+            singleton.calculate();
+        }
+    }
+    ````
+## 观察者模式
+- **场景描述：虽然Thread为我们提供了可获取状态，以及判断是否alive的方法，但是这些方法均是针对线程本身的，而我们提交的任务Runnable在运行过程中所处的状态如何是无法直接获得的，比如它什么时候开始，什么时候结束，最不好的一种体验是无法获得Runnable任务执行后的结果。一般情况下想要获得最终结果，我们不得不为Thread或者Runnable传人共享变量，但是在多线程的情况下，共享变量将导致资源的竞争从而增加了数据不一致性的安全隐患。**
+- **当某个对象发生状态改变需要通知第三方的时候，观察者模式就特别适合胜任这样的工作**
+- **类图框架：**
+![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200317162845.png)
+- **观察者接口：** 该接口主要是暴露给调用者使用的，其中四个枚举类型分别代表了当前任务执行生命周期的各个阶段，具体如下。
+
+    ````java
+    package com.dennis.conccurency.chapter13;
+
+    /**
+    * 描述：观察者模式
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/17 12:01
+    */
+    public interface Observable {
+        // 任务生命周期的枚举类
+        enum Cycle {
+            STARTED, RUNNING, DONE, ERROR;
+        }
+
+        // 获取当前任务的生命周期
+        Cycle getCycle();
+
+        // 定义任务线程的启动方法，主要是为了屏蔽Thread的其他方法
+        void start();
+
+        // 定义任务的中断方法，主要是为了屏蔽Thread的其他方法
+        void interrupt();
+    }
+    ````
+- **任务的生命周期接口：** TaskLifecycle接口定义了在任务执行的生命周期中会被触发的接口，其中EmptyLifycycle是-一个空的实现，主要是为了让使用者保持对Thread类的使用习惯。
+
+    ````java
+    package com.dennis.conccurency.chapter13;
+
+    /**
+    * 描述：主要定义任务执行的生命周期中将会被触发的接口
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/17 12:10
+    */
+    public interface TaskLifecycle<T> {
+        // 任务启动时将会触发onStart方法
+        void onStart(Thread thread);
+
+        // 运行时触发
+        void onRunning(Thread thread);
+
+        // 结束时触发
+        void onFinished(Thread thread, T result);
+
+        // 异常时触发
+        void onError(Thread thread, Exception e);
+
+        // 生命周期接口的空实现
+        class EmptyTaskLifecycle<T> implements TaskLifecycle<T> {
+
+            @Override
+            public void onStart(Thread thread) {
+                // do nothing
+            }
+
+            @Override
+            public void onRunning(Thread thread) {
+                // do nothing
+            }
+
+            @Override
+            public void onFinished(Thread thread, T result) {
+                // do nothing
+            }
+
+            @Override
+            public void onError(Thread thread, Exception e) {
+                // do nothing
+            }
+        }
+    }
+    ````
+- **任务接口：**
+    ````java
+    package com.dennis.conccurency.chapter13;
+
+    /**
+    * 描述： 任务函数式接口
+    * 由于我们需要对线程中的任务执行增加可观察的能力，并且需要获得最后的计算结果，因此Runnable接口
+    * 在可观察的线程中将不再使用，取而代之的是Task接口，其作用与Runnable类似，主要用于承载任务的
+    * 逻辑执行单元。
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/17 12:16
+    */
+    @FunctionalInterface
+    public interface Task<T> {
+        // 唯一调用方法，不接受参数，有一返回值
+        T call();
+    }
+    ````
+- **观察者线程：** ObservableThread是任务监控的关键，它继承自Thread类和Observable接口，并且在构造期间需要传人Task的具体实现。
+    ````java
+    package com.dennis.conccurency.chapter13;
+
+    import com.sun.crypto.provider.PBEWithMD5AndDESCipher;
+
+    /**
+    * 描述：观察者线程实现类：ObservableThread是任务监控的关键，它继承自Thread类和Observable接口，并且在构造期间需要传人Task的具体实现。
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/17 12:22
+    */
+    public class ObservableThread<T> extends Thread implements Observable {
+        private final TaskLifecycle<T> lifecycle;
+        private final Task<T> task;
+
+        private Cycle cycle;
+
+
+        // 指定Task的实现，但是TaskLifecycle默认为空实现
+        public ObservableThread(Task<T> task) {
+            this(new TaskLifecycle.EmptyTaskLifecycle<>(), task);
+        }
+
+        public ObservableThread(TaskLifecycle<T> taskLifecycle, Task<T> task) {
+            super();
+            // task不能为null
+            if (task == null)
+                throw new IllegalArgumentException("the task is required");
+            this.lifecycle = taskLifecycle;
+            this.task = task;
+        }
+
+        /**
+        * 重写父类的run方法，并且将其修饰为final类型，不允许子类再次对其进行重写，run
+        * 方法在线程的运行期间，可监控任务在执行过程中的各个生命周期阶段，任务每经过一个
+        * 阶段相当于发生了-次事件。
+        */
+        @Override
+        public final void run() {
+            // 在执行任务逻辑单元的时候，分别触发相应的事件
+            this.update(Cycle.STARTED, null, null);
+            try {
+                this.update(Cycle.RUNNING, null, null);
+                // 执行任务，没有输入参数，有一返回结果
+                T result = this.task.call();
+                this.update(Cycle.DONE, result, null);
+            } catch (Exception e) {
+                e.printStackTrace();
+                this.update(Cycle.ERROR, null, e);
+            }
+        }
+
+        /**
+        * update方法用于通知时间的监听者，此时任务在执行过程中发生了什么，最主要的通
+        * 知是异常的处理。如果监听者也就是TaskLifecycle, 在响应某个事件的过程中出现了意外，
+        * 则会导致任务的正常执行受到影响，因此需要进行异常捕获，并忽略这些异常信息以保证
+        * TaskLifecycle的实现不影响任务的正确执行，但是如果任务执行过程中出现错误并且抛出
+        * 了异常，那么update方法就不能忽略该异常，需要继续抛出异常，保持与call方法同样的
+        * 意图。
+        */
+        private void update(Cycle cycle, T result, Exception e) {
+            this.cycle = cycle;
+
+            if (lifecycle == null)
+                return;
+            try {
+                switch (cycle) {
+                    case STARTED:
+                        this.lifecycle.onStart(currentThread());
+                        break;
+                    case RUNNING:
+                        this.lifecycle.onRunning(currentThread());
+                        break;
+                    case DONE:
+                        this.lifecycle.onFinished(currentThread(), result);
+                        break;
+                    case ERROR:
+                        this.lifecycle.onError(currentThread(), e);
+                        break;
+                }
+            } catch (Exception ex) {
+                if (cycle == Cycle.ERROR) {
+                    throw ex;
+                }
+            }
+        }
+
+        @Override
+        public Cycle getCycle() {
+            return this.cycle;
+        }
+    }
+    ````
+- **测试一：**
+    ````java
+    package com.dennis.conccurency.chapter13;
+
+    import java.util.concurrent.TimeUnit;
+
+    /**
+    * 描述：最简单的测试类
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/17 13:39
+    */
+    public class TestV1 {
+        /**
+        * 这段程序与你平时使用Thread并没有太大的区别，只不过ObservableThread是一个泛
+        * 型类，我们将其定义为Void类型，表示不关心返回值，默认的EmptyLifecycle同样表示不
+        * 关心生命周期的每一个阶段
+        */
+        public static void main(String[] args) {
+            ObservableThread observableThread = new ObservableThread<>(() -> {
+                try {
+                    TimeUnit.SECONDS.sleep(4);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("finished done");
+                return null;
+            });
+            observableThread.start();
+        }
+    }
+    ````
+- **测试二：**
+    ````java
+    package com.dennis.conccurency.chapter13;
+
+    import java.util.concurrent.TimeUnit;
+
+    /**
+    * 描述： 一个能返回任务执行结果的测试
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/17 13:43
+    */
+    public class TestV2 {
+        /**
+        * 下面这段程序代码定义了一个需要返回值的ObservableThread,并且通过重写
+        * EmptyLifecycle的onFinish方法监听（观察）输出最终的返回结果。
+        */
+        public static void main(String[] args) {
+            final TaskLifecycle<String> taskLifecycle = new TaskLifecycle.EmptyTaskLifecycle<String>() {
+                @Override
+                public void onFinished(Thread thread, String result) {
+                    System.out.println("the result of the task executed by the thread," + thread.getName() + ", is:" + result);
+                }
+            };
+
+            ObservableThread<String> stringObservableThread = new ObservableThread<>(taskLifecycle, () -> {
+                try {
+                    TimeUnit.SECONDS.sleep(3);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                // call（）方法的返回结果如下
+                return "hello observer!";
+            });
+            stringObservableThread.start();
+        }
+    }
+    ````
+- **关键点总结：**
+![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200317164454.png)
+## Single Thread Execution设计模式
+- **场景：Single Thread Execution模式是指在同一时刻只能有一个线程去访问共享资源，就像独木桥一样每次只允许一人通行，简单来说，Single Thread Execution 就是采用排他式的操作保证在同一时刻只能有一个线程访问共享资源。**
+- **登机案件案例：**
+- **安检机类：** 充当共享（临界）资源的角色
+    ````java
+    package com.dennis.conccurency.chapter14;
+
+    import java.util.concurrent.TimeUnit;
+
+    /**
+    * 描述：安检类充当共享资源
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/17 19:02
+    */
+    public class FlightSecurity {
+        /**
+        * 乘客名
+        */
+        private String passengerName;
+        /**
+        * 登机牌Id
+        */
+        private String passId;
+        /**
+        * 身份Id
+        */
+        private String idCard;
+
+        /**
+        * 当前检测人编号
+        */
+        int count;
+
+        /**
+        * 检测方法
+        */
+        public synchronized void  pass(String passengerName, String idCard, String passId) {
+
+            //=======线程不安全=========
+            this.idCard = idCard;
+            this.passId = passId;
+            //=======线程不安全=========
+            
+            this.passengerName = passengerName;
+            count++;
+            check(passId, idCard);
+        }
+
+        private void check(String passId, String idCard) {
+            if (passId.charAt(0) != idCard.charAt(0)) {
+                throw new RuntimeException("====Exception====" + toString());
+            } else {
+                System.out.println("passenger:" + count +" " +passengerName + " has passed");
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "the count " + count + "passenger:" + passengerName + ",idCard" + idCard + ",passId" + passId + "pass failure";
+        }
+
+
+    }
+
+    ````
+- **资源操作类（乘客）：**
+    ````java
+    package com.dennis.conccurency.chapter14;
+
+    public class Passengers extends Thread {
+        private String passengerName;
+        private String passId;
+        private String idCard;
+        // 共享资源
+        private final FlightSecurity flightSecurity;
+
+        public Passengers(String passengerName, String passId, String idCard, FlightSecurity flightSecurity) {
+            this.passengerName = passengerName;
+            this.passId = passId;
+            this.idCard = idCard;
+            this.flightSecurity = flightSecurity;
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                // 不断过安检
+                this.flightSecurity.pass(passengerName, idCard, passId);
+            }
+        }
+
+        public static void main(String[] args) {
+            FlightSecurity securityMachine = new FlightSecurity();
+            Passengers passengersThread01 = new Passengers("zhangsan01", "A_passId_1101", "A_idCard_1102", securityMachine);
+            Passengers passengersThread02 = new Passengers("zhangsan02", "B_passId_1101", "B_idCard_1102", securityMachine);
+            Passengers passengersThread03 = new Passengers("zhangsan03", "C_passId_1101", "C_idCard_1102", securityMachine);
+            Passengers passengersThread04 = new Passengers("zhangsan04", "D_passId_1101", "D_idCard_1102", securityMachine);
+            passengersThread01.start();
+            passengersThread02.start();
+            passengersThread03.start();
+            passengersThread04.start();
+        }
+    }
+    ````
+    - 说明：本章类容详见chapter16中哲学家吃面问题
+## 读写分离设计模式
+- **场景：**
+    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200318173119.png)
+- **类图设计：**
+    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200318173634.png)
+    - **说明：** 以上各类代码详见D:\Code\github\thread_learn\src\main\java\com\dennis\conccurency\chapter15
+- **ShareData类：**
+    ````java
+    package com.dennis.conccurency.chapter15;
+
+    import java.util.ArrayList;
+    import java.util.List;
+    import java.util.concurrent.TimeUnit;
+
+    /**
+    * 描述： 读写锁的使用
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/18 14:36
+    */
+    public class ShareData {
+        // 定义共享数据（资源）
+        private final List<Character> container = new ArrayList<>();
+        // 读写锁工厂
+        private final ReadWriteLock readWriteLock = ReadWriteLock.getReadWriteLockImpl();
+        // 获取读取锁
+        private ReadLock readLock = readWriteLock.readLock();
+        // 获取写入锁
+        private WriteLock writeLock = readWriteLock.writeLock();
+
+        private final int length;
+
+        // 初始化共享数据
+        public ShareData(int length) {
+            this.length = length;
+            for (int i = 0; i < length; i++) {
+                container.add(i, 'C');
+            }
+        }
+
+        // 读方法采用读取锁进行控制
+        public char[] read() throws InterruptedException {
+            try {
+                readLock.lock();
+                char[] chars;
+                int size = container.size();
+                chars = new char[size];
+                for (int i = 0; i < length; i++) {
+                    chars[i] = container.get(i);
+                }
+                slowly();
+                return chars;
+            } finally {
+                // 操作关闭将锁释放
+                readLock.unlock();
+            }
+        }
+
+        // 写操作采用写入锁进行控制
+        public void write(char c) throws InterruptedException {
+            try {
+                writeLock.lock();
+                for (int i = 0; i < length; i++) {
+                    container.add(i, c);
+                }
+                slowly();
+            } finally {
+                // 释放锁
+                writeLock.unlock();
+            }
+        }
+
+        private void slowly() {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    ````
+- **测试类：**
+    ````java
+    package com.dennis.conccurency.chapter15;
+
+    import java.util.stream.IntStream;
+
+    /**
+    * 描述：读写锁测试
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/18 16:25
+    */
+    public class ReadWriteLockTest {
+        // 定义异常待写入的字符串
+        private static final String textToWrite = "this string is for writing into the container";
+
+        public static void main(String[] args) {
+            final ShareData data = new ShareData(50);
+            // 2个线程用于写操作
+            IntStream.range(0, 2).forEach(i -> {
+                new Thread(() -> {
+                    for (int n = 0; n < textToWrite.length(); n++) {
+                        try {
+                            data.write(textToWrite.charAt(n));
+                            System.out.println(Thread.currentThread().getName() + "write:" + textToWrite.charAt(n));
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }, "write" + i).start();
+            });
+            // 10个线程用于读操作
+            IntStream.range(0, 10).forEach(i -> {
+                new Thread(() -> {
+                    while (true) {
+                        try {
+                            System.out.println(Thread.currentThread().getName() + "read:" + new String(data.read()));
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }, "read" + i).start();
+            });
+        }
+    }
+    ````
+- **总结：**
+    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200318174351.png)
+    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200318174447.png)
 # 阶段三：JDK并发包详解
 # 阶段四：并发编程深入讨论
