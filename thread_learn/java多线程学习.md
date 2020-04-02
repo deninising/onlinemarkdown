@@ -2043,5 +2043,494 @@
 - **总结：**
     ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200318174351.png)
     ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200318174447.png)
+## 不可变对象设计模式（对该类下一个对象的每次操作都会返回一个新的对象）
+**该节类容详见第十八章**
+- **线程不安全累加器及synchronized方式解决不安全方式**
+    ````java
+    package com.dennis.conccurency.chapter16;
+
+    import java.util.concurrent.TimeUnit;
+    import java.util.stream.IntStream;
+
+    /**
+    * 描述：非线程安全的累加器
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/19 11:21
+    */
+    public class IntegerAccumulator {
+        private int init;
+
+        public IntegerAccumulator(int init) {
+            this.init = init;
+        }
+
+        // 加i
+        public int add(int i) {
+            this.init += i;
+            return this.init;
+        }
+
+        // 获取值
+        public int getValue() {
+            return this.init;
+        }
+
+        public static void main(String[] args) {
+            IntegerAccumulator accumulator = new IntegerAccumulator(0);
+
+        /* IntStream.range(0, 3).forEach(item -> {
+                new Thread(() -> {
+                    int inc = 0;
+                    while (true) {
+                        int oldValue = accumulator.getValue();
+                        int result = accumulator.add(inc);
+                        if (oldValue + inc != result) {
+                            System.out.println("error:" + oldValue + "+" + inc + " does not equal " + result);
+                        } else {
+                            System.out.println("calculate correctly!!!");
+                        }
+                        try {
+                            TimeUnit.MILLISECONDS.sleep(100);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        inc++;
+                    }
+                }, "thread-" + item).start();
+            });*/
+
+            // 采用synchronized关键字解决同步解决线程安全问题
+            IntStream.range(0, 3).forEach(item -> {
+                new Thread(() -> {
+                    int inc = 0;
+                    while (true) {
+                        int oldValue;
+                        int result;
+                        synchronized (IntegerAccumulator.class) {
+                            oldValue = accumulator.getValue();
+                            result = accumulator.add(inc);
+                        }
+                        if (oldValue + inc != result) {
+                            System.out.println("error:" + oldValue + "+" + inc + " does not equal " + result);
+                        } else {
+                            System.out.println("calculate correctly!!!");
+                        }
+                        try {
+                            TimeUnit.MILLISECONDS.sleep(100);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        inc++;
+                    }
+                }, "thread-" + item).start();
+            });
+        }
+    }
+
+    ````
+- **不可变对象解决累加器‘‘共享数据’’不安全问题**
+    ````java
+    package com.dennis.conccurency.chapter16;
+
+    import java.util.concurrent.TimeUnit;
+    import java.util.stream.IntStream;
+
+    /**
+    * 描述： 不可变类，用final修饰类防止被继承重写
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/19 11:38
+    */
+    public final class ImmutableIntAccumulator {
+        private int init;
+
+        public ImmutableIntAccumulator(int init) {
+            this.init = init;
+        }
+        
+        // 构造新的累加器，需要用到另外一个immutableIntAccumulator和初始值
+        private ImmutableIntAccumulator(ImmutableIntAccumulator intAccumulator, int init) {
+            this.init = intAccumulator.getValue() + init;
+        }
+
+        // 每次相加都会产生一个新的ImmutableIntAccumulator
+        public final ImmutableIntAccumulator add(int inc) {
+            return new ImmutableIntAccumulator(this, inc);
+        }
+
+        public int getValue() {
+            return this.init;
+        }
+
+        public static void main(String[] args) {
+            final ImmutableIntAccumulator[] accumulator = {new ImmutableIntAccumulator(0)};
+            // 采用synchronized关键字解决同步解决线程安全问题
+            IntStream.range(0, 3).forEach(item -> {
+                new Thread(() -> {
+                    int inc = 0;
+                    while (true) {
+                        int oldValue = accumulator[0].getValue();
+                        ImmutableIntAccumulator newCalculator = accumulator[0].add(inc);
+                        int result = newCalculator.getValue();
+                        accumulator[0] = newCalculator;
+                        if (oldValue + inc != result) {
+                            System.out.println("error:" + oldValue + " + " + inc + " != " + result);
+                        } else {
+                            System.out.println("correct:" + oldValue + " + " + inc + " = " + result);
+                        }
+                        try {
+                            TimeUnit.MILLISECONDS.sleep(50);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        inc++;
+                    }
+                }, "thread-" + item).start();
+            });
+        }
+    }
+    ````
+## Future模式
+- **场景：**
+![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200320104436.png)
+- **类图设计：**
+![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200320105033.png)
+- **Future接口：**
+    ````java
+    package com.dennis.conccurency.chapter17;
+
+    /**
+    * 描述：Future提供了获取计算结果和判断任务是否完成的两个接口，其中获取计算结果将会
+    * 导致调用阻塞(在任务还未完成的情况下)。
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/19 15:46
+    */
+    public interface Future<R> {
+        // 用于获取结果
+        R get() throws InterruptedException;
+
+        //  用于判断内部任务是否执行结束
+        boolean done();
+    }
+    ````
+- **FutureService接口：**
+    ````java
+    package com.dennis.conccurency.chapter17;
+
+    /**
+    * 描述：   FutureService主要用于提交任务,提交的任务主要有两种，第-一种不需要返回值，第
+    * 二种则需要获得最终的计算结果。FutureService 接口中提供了对FutureServiceImpl构建的
+    * 工厂方法，JDK8中不仅支持default方法还支持静态方法,JDK9甚至还支持接口私有方法。
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/19 15:51
+    */
+    public interface FutureService<IN, OUT> {
+        // 无需返回结果
+        Future<?> submit(Runnable runnable);
+
+        // 提交任务且有返回结果，其中Task接口代替了Runnable接口
+        Future<OUT> submit(Task<IN, OUT> task, IN input);
+
+        // 提交任务且有返回结果，其中Task接口代替了Runnable接口
+        Future<OUT> submit(Task<IN, OUT> task, IN input, Callback<OUT> callback);
+
+        // 使用静态工厂方法创建了一个FutureService的实现类
+        static <T, R> FutureService<T, R> newFutureService() {
+            return new FutureServiceImpl<>();
+        }
+    }
+    ````
+- **Task接口：**
+    ````java
+   package com.dennis.conccurency.chapter17;
+
+    /**
+    * 描述：相当与Runnable接口，只是其接口方法改为有一传入参数且有返回值
+    * Task接口主要是提供给调用者实现计算逻辑之用的，可以接受-一个参数并且返回最终
+    * 的计算结果，这一点非常类似于JDK1.5中的Callable接口.
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/19 16:01
+    */
+    @FunctionalInterface
+    public interface Task<IN, OUT> {
+        // 相当于Runnable的run方法,给定一个参数,经计算得到返回结果
+        OUT get(IN input);
+    }
+    ````
+- **FutureTask实现类：**
+    ````java
+    package com.dennis.conccurency.chapter17;
+
+    /**
+    * 描述：FutureTask是Future的- -个实现，除了实现Future中定义的get()以及done() 方法，还
+    * 额外增加了protected 方法finish， 该方法主要用于接收任务被完成的通知.
+    *
+    * FutureTask中充分利用了线程间的通信:wait和notifyAll，当任务没有被完成之前通过
+    * get方法获取结果，调用者会进入阻塞，直到任务完成并接收到其他线程的唤醒信号，finish
+    * 方法接收到了任务完成通知，唤醒了因调用get而进人阻塞的线程。
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/19 16:06
+    */
+    public class FutureTask<R> implements Future<R> {
+        // 计算结果
+        private R result;
+        // 任务呢是否完成
+        private boolean isDone;
+        // 对象锁
+        private final Object LOCK = new Object();
+
+        @Override
+        public R get() throws InterruptedException {
+            synchronized (LOCK) {
+                // 未计算完成,调用该方法的接口阻塞
+                while (!isDone) {
+                    LOCK.wait();
+                }
+                // 计算完成返回结果
+                return this.result;
+            }
+        }
+
+        //finish方法主要用于为FutureTask设置计算结果
+        protected void finish(R result) {
+            synchronized (LOCK) {
+                if (isDone)
+                    return;
+                this.result = result;
+                this.isDone = true;
+                LOCK.notifyAll();
+            }
+        }
+
+        @Override
+        public boolean done() {
+            return this.isDone;
+        }
+    }
+    ````
+- **FutureServiceImpl实现类：**
+    ````java
+    package com.dennis.conccurency.chapter17;
+
+    import java.util.concurrent.atomic.AtomicInteger;
+
+    /**
+    * 描述：FutureServiceImpl的主要作用在于当提交任务时创建一个新的线程来受理该任务,进而达到任务异步执
+    * 行的效果
+    *
+    * 在FutureServiceImpl的submit方法中，分别启动了新的线程运行任务，起到了异步的
+    * 作用，在任务最终运行成功之后，会通知FutureTask任务已完成。
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/19 15:59
+    */
+    public class FutureServiceImpl<IN, OUT> implements FutureService<IN, OUT> {
+        // 为执行线程指定名字前缀
+        private final static String FUTURE_THREAD_PREFIX = "FUTURE-";
+
+        private final AtomicInteger nextCounter = new AtomicInteger(0);
+
+        // 获取名称
+        protected String getNextName() {
+            return FUTURE_THREAD_PREFIX + nextCounter.getAndIncrement();
+        }
+
+        @Override
+        public Future<?> submit(Runnable runnable) {
+            final FutureTask<Void> future = new FutureTask<>();
+            new Thread(() -> {
+                runnable.run();
+                // 任务执行结束将null作为结果传给future;
+                future.finish(null);
+            }, getNextName()).start();
+            return future;
+        }
+
+        @Override
+        public Future<OUT> submit(Task<IN, OUT> task, IN input) {
+            final FutureTask<OUT> future = new FutureTask<>();
+            new Thread(() -> {
+                OUT out = task.get(input);
+                // 任务执行结束之后，将真实的结果通过finish方法传递给future
+                future.finish(out);
+            }, getNextName()).start();
+            return future;
+        }
+
+        public Future<OUT> submit(Task<IN, OUT> task, IN input, Callback<OUT> callback) {
+            final FutureTask<OUT> future = new FutureTask<>();
+            new Thread(() -> {
+                OUT result = task.get(input);
+                future.finish(result);
+                /**
+                * 修改后的submit方法，增加了一个Callback参数，主要用来接受并处理任务的计算结
+                * 果，当提交的任务执行完成之后，会将结果传递给Callback接口进行进一步的执行， 这样
+                * 在提交任务之后,无需调用get方法获取执行的结果，因此避开在主线中因为调用get方法获得结果而陷入阻塞。
+                */
+                if (callback != null)
+                    callback.call(result);
+            }, getNextName()).start();
+            return future;
+        }
+    }
+    ````
+- **Callback接口：**
+    ````java
+    package com.dennis.conccurency.chapter17;
+
+    /**
+    * 描述：回调接口
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/19 17:20
+    */
+    @FunctionalInterface
+    public interface Callback<R> {
+        // 任务完成后会调用该方法，其中R为任务执行后的结果
+        void call(R result);
+    }
+    ````
+- **测试类：**
+    - **不含回调接口：**
+        ````java
+        package com.dennis.conccurency.chapter17;
+
+        import java.util.concurrent.TimeUnit;
+
+        /**
+        * 描述： 测试类
+        *
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/3/19 17:01
+        */
+        public class FutureTest01 {
+            public static void main(String[] args) throws InterruptedException {
+                /*FutureService<Void, Void> futureService = FutureService.newFutureService();
+                Future<?> future = futureService.submit(() -> {
+                    try {
+                        TimeUnit.SECONDS.sleep(30);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println("异步任务执行结束！");
+                });
+                System.out.println("异步调用开始，异步任务正在执行......");
+                // future的get方法将造成线程阻塞
+                future.get();*/
+
+                FutureService<String, Integer> futureService = FutureService.newFutureService();
+                Future<Integer> future = futureService.submit(input -> {
+                    try {
+                        TimeUnit.SECONDS.sleep(10);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println("异步任务执行结束！");
+                    return input.length();
+                }, "hello world");
+                System.out.println("异步调用开始，异步任务正在执行......");
+                // future的get方法将造成线程阻塞
+                System.out.println(future.get());
+            }
+        }
+        ````
+    - **含有回调接口：**
+        ````java
+        package com.dennis.conccurency.chapter17;
+
+        import java.util.concurrent.TimeUnit;
+
+        /**
+        * 描述：
+        *
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/3/19 17:34
+        */
+        public class FutureTest02 {
+            public static void main(String[] args) {
+                FutureService<String, Integer> futureService = FutureService.newFutureService();
+                futureService.submit(input -> {
+                    try {
+                        // 模拟任务执行耗时
+                        TimeUnit.SECONDS.sleep(10);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println("异步任务执行结束！结果如下：");
+                    return input.length();
+                }, "hello world", System.out::println);
+                System.out.println("异步调用开始，异步任务正在执行......");
+            }
+        }
+        ````
+## Guarded Suspension 设计模式
+- **场景：**
+![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200320114255.png)
+- **实例代码：**
+    ````java
+    package com.dennis.conccurency.chapter18;
+
+    import java.util.LinkedList;
+
+    /**
+    * 描述：确保挂起模式，条件不满足则挂起，反之开启
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/20 11:31
+    */
+    public class GuardedSuspensionQueue {
+        // 资源共享队列
+        private final LinkedList<Integer> queue = new LinkedList<>();
+        // 条件
+        private final int LIMIT = 100;
+
+        public void offer(Integer data) {
+            synchronized (this) {
+                while (this.queue.size() >= LIMIT) {
+                    try {
+                        this.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                this.queue.addLast(data);
+                this.notifyAll();
+            }
+        }
+
+        public Integer take() {
+            synchronized (this) {
+                while (this.queue.isEmpty()) {
+                    try {
+                        this.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                Integer integer = this.queue.removeFirst();
+                this.notifyAll();
+                return integer;
+            }
+        }
+    }
+    ````
+- **总结：Guarded Suspension模式是一个非常基础的设计模式，它主要关注的是当某个条件(临界值)不满足时将操作的线程正确地挂起，以防止出现数据不一致或者操作超过临界值的控制范围。Guarded Suspension设计模式并不复杂，但是它是很多其他线程设计模式的基础，比如生产者消费者模式，后文中的Thread Worker设计模式，Balking 设计模式等，都可以看到Guarded Suspension模式的影子，Guarded Suspension的关注点在于临界值的条件是否满足，当达到设置的临界值时相关线程则会被挂起。** 
+
 # 阶段三：JDK并发包详解
 # 阶段四：并发编程深入讨论
