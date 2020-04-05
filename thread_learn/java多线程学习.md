@@ -1481,7 +1481,7 @@
         }
 
         // 对提供getInstance方法,获取单例对象
-        public Singleton4Holder getInstance() {
+        public static Singleton4Holder getInstance() {
             return Holder.INSTANCE;
         }
     }
@@ -2533,4 +2533,696 @@
 - **总结：Guarded Suspension模式是一个非常基础的设计模式，它主要关注的是当某个条件(临界值)不满足时将操作的线程正确地挂起，以防止出现数据不一致或者操作超过临界值的控制范围。Guarded Suspension设计模式并不复杂，但是它是很多其他线程设计模式的基础，比如生产者消费者模式，后文中的Thread Worker设计模式，Balking 设计模式等，都可以看到Guarded Suspension模式的影子，Guarded Suspension的关注点在于临界值的条件是否满足，当达到设置的临界值时相关线程则会被挂起。** 
 
 # 阶段三：JDK并发包详解
+## Atomic包
+### CAS算法
+- CAS算法是一种对比设置算法，当其需要对某个volatile共享变量进行操作的时候，1、先获取该值，2、再比较获取到的值与期望值是否相等，相等则成功设置否则回到步骤1（自旋操作）
+ **说明** 步骤2看似分为两步，实则底层调用cpu级别指令>>>为一原子操作。保证享变量的**可见性、有序性、原子性**
+### 数字原子类型
+- AtomicInteger
+- AtomicBoolean：对boolean值采取原子操作控制，0>>>false , 1>>>true
+- AtomicLong: 由于Long类型为8个字节，所以与AtomicInteger相比，它只是在cpu级别对总线进行的加锁操作，cpu中最小单元数据大小为4个字节（目前普遍这样）
+- **案例：** 利用AtomicInteger事项非阻塞显示锁,利用compareAndSet(int expect,int update)方法的性质即：atomicInteger的原有值和传入的期望值不相等的时候该方法会返回false,且不会更新值
+````java
+    package com.dennis.conccurency.atomic.chapter01;
+
+    import java.util.concurrent.atomic.AtomicInteger;
+
+    /**
+    * 描述： 利用AtomicInteger.compareAndSet(Int expect,Int value)的快速失败特性,来创建一个非阻塞锁
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/3/31 16:36
+    */
+    public class UnBlockedLock {
+        private final int UNLOCKED = 0;
+        private final int LOCKED = 1;
+
+        private final AtomicInteger LOCK_STATUS = new AtomicInteger(this.UNLOCKED);
+
+        // 存放正持有锁资源的线程
+        private Thread localThread;
+
+        // 加锁,若获取锁资源失败,则直接抛异常-->fail-fast,放弃竞争锁资源
+        public void tryLock() throws GetLockException {
+            boolean success = LOCK_STATUS.compareAndSet(UNLOCKED, LOCKED);
+            if (!success) {
+                throw new GetLockException("it is failed to get the lock");
+            }
+            localThread = Thread.currentThread();
+        }
+
+        // 解锁
+        public void unLock() {
+            if (Thread.currentThread() != localThread || LOCK_STATUS.get() == UNLOCKED) {
+                return;
+            }
+            LOCK_STATUS.compareAndSet(LOCKED, UNLOCKED);
+        }
+    }
+````
+- **测试：**
+````java
+    package com.dennis.conccurency.atomic.chapter01;
+
+    import java.util.concurrent.TimeUnit;
+    import java.util.stream.IntStream;
+
+    public class UnBlockedLockTest {
+        public static void main(String[] args) {
+            UnBlockedLock lock = new UnBlockedLock();
+            // 起5个工作线程
+            IntStream.rangeClosed(1, 5).forEach(workThreadNum -> {
+                new Thread(() -> {
+                    try {
+                        lock.tryLock();
+                        // do working;
+                        for (int i = 0; i <= 30; i++) {
+                            System.out.println(Thread.currentThread().getName() + " is working......");
+                            TimeUnit.MILLISECONDS.sleep(500);
+                        }
+                    } catch (GetLockException | InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        lock.unLock();
+                    }
+                }, "thread_" + workThreadNum).start();
+            });
+        }
+    }
+````
+### 引用原子类型
+- AtomicReference：用于自定义类型具备原子类型特点的设定
+- AtomicStampedReference：解决自定义原子类型（链表的原子操作或栈的原子操作......）中A-B-A问题
+- **自定义原子类案例**
+    ````java
+        package com.dennis.conccurency.atomic.chapter02;
+
+        import java.util.concurrent.TimeUnit;
+        import java.util.concurrent.atomic.AtomicReference;
+        import java.util.concurrent.atomic.AtomicStampedReference;
+
+        /**
+        * 描述：解决A->B->A问题案例
+        *
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/4/1 15:38
+        */
+        public class AtomicStampedReferenceTest {
+
+            public static void main(String[] args) {
+                Node<Student> studentNode01 = new Node<>(new Student("z01", 11));
+                studentNode01.setPre(null);
+                studentNode01.setNext(null);
+                AtomicStampedReference<Node<Student>> atomicStudentNode = new AtomicStampedReference<>(studentNode01, 1);
+
+                // a = "abc"; // 匿名内部类中无法访问该对象，需要做包装
+                // 可以用AtomicReference<T>来包装匿名内部类将要访问并进行修改的对象T,不用数组进行包装
+
+                    /*局部内部类和匿名内部类只能访问局部final变量"
+                    从JDK 1.8开始，会默认给这两种内部类访问(读操作)的field 加上final(隐式地)，
+                    所以你可能会在编译器中看到可以访问没有加final的变量，只有你去修改(写操作)它时，
+                    编译器才会报错。总结：内部类访问外部类的变量本质上是对外部变量的一份拷贝的访问操
+                    作,从而会引发数据不一致问题,因此需要对外部变量进行final修饰*/
+
+                    AtomicReference<String> a = new AtomicReference<>("abc");
+        //          String a = "abc";
+                new Thread(() -> {
+                    a.set("dfd");
+        //            a = "dfd";
+
+                // 可以用AtomicReference<T>来包装匿名内部类将要访问并进行修改的对象T,不用数组进行包装
+
+                    int stamp = atomicStudentNode.getStamp();
+                    try {
+                        TimeUnit.SECONDS.sleep(3);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    Node<Student> reference = atomicStudentNode.getReference();
+                    Node<Student> studentNode02 = new Node<>(new Student("z02", 12));
+                    int realityStamp = atomicStudentNode.getStamp();
+                    boolean success = atomicStudentNode.compareAndSet(reference, Node.appendAndNew(reference, studentNode02), stamp, stamp + 1);
+                    if (success) {
+                        System.out.println("1-成功设值！！！");
+                        System.out.println(atomicStudentNode.getReference());
+                        System.out.println("expect stamp ->"+stamp);
+                        System.out.println("reality stamp ->"+realityStamp);
+                    } else {
+                        System.out.println("1-设置失败！！！");
+                        System.out.println("expect stamp ->"+stamp);
+                        System.out.println("reality stamp ->"+realityStamp);
+                    }
+                }).start();
+                new Thread(() -> {
+                    int stamp = atomicStudentNode.getStamp();
+                    Node<Student> reference = atomicStudentNode.getReference();
+                    Node<Student> studentNode02 = new Node<>(new Student("z02", 12));
+                    int realityStamp = atomicStudentNode.getStamp();
+                    boolean success = atomicStudentNode.compareAndSet(reference, Node.appendAndNew(reference, studentNode02), stamp, stamp + 1);
+                    if (success) {
+                        System.out.println("2-成功设值！！！");
+                        System.out.println(atomicStudentNode.getReference());
+                        System.out.println("expect stamp ->"+stamp);
+                        System.out.println("reality stamp ->"+realityStamp);
+                    } else {
+                        System.out.println("2-设置失败！！！");
+                        System.out.println("expect stamp ->"+stamp);
+                        System.out.println("reality stamp ->"+realityStamp);
+                    }
+                }).start();
+            }
+            static class Node<T> {
+                private Node<T> pre;
+                private Node<T> next;
+                private T value;
+
+                public Node(T value) {
+                    this.value = value;
+                }
+
+                public T getValue() {
+                    return value;
+                }
+
+                public void setValue(T value) {
+                    this.value = value;
+                }
+
+                public Node<T> getPre() {
+                    return pre;
+                }
+
+                public void setPre(Node<T> pre) {
+                    this.pre = pre;
+                }
+
+                public Node<T> getNext() {
+                    return next;
+                }
+
+                public Node<T> setNext(Node<T> next) {
+                    this.next = next;
+                    return this;
+                }
+
+                static <T> Node<T> appendAndNew(Node<T> oldNode, Node<T> tail) {
+                    oldNode.recAppend(oldNode, tail);
+                    return new Node<>(oldNode.getValue()).setNext(oldNode.getNext());
+                }
+
+                // 递归添加设置尾部节点,一般还是推荐使用循环
+                private void recAppend(Node<T> chainNode, Node<T> tail) {
+                    Node<T> next;
+                    if ((next = chainNode.getNext()) != null) {
+                        recAppend(next, tail);
+                    } else {
+                        chainNode.setNext(tail);
+                    }
+                }
+
+                @Override
+                public String toString() {
+                    return "Node{" +
+                            "pre=" + pre +
+                            ", next=" + next +
+                            ", value=" + value +
+                            '}';
+                }
+            }
+
+            static class Student {
+                private String name;
+                private Integer age;
+
+                public Student() {
+                }
+
+                public Student(String name, Integer age) {
+                    this.name = name;
+                    this.age = age;
+                }
+
+                public String getName() {
+                    return name;
+                }
+
+                public void setName(String name) {
+                    this.name = name;
+                }
+
+                public Integer getAge() {
+                    return age;
+                }
+
+                public void setAge(Integer age) {
+                    this.age = age;
+                }
+            }
+        }
+
+    ````
+
+### 数组元素原子类型(不做重点)
+- AtomicIntegerArray
+- AtomicLongArray
+- AtomicReferenceArray
+### 字段属性原子类型（不做重点）
+- AtomicIntegerFieldUpdater
+- AtomicLongFieldUpdater
+- AtomicReferenceFieldUpdater
+## utils包
+
+### CountDownLatch
+- 计数器递减锁：调用latch.wait()方法的线程将被阻塞，直到其他线程使latch的值递减到0时，被阻塞住的线程被唤醒
+- **案例：** 异步执行场景中,采用传统方式控制主线程
+    ````java
+        package com.dennis.conccurency.atomic.chapter03;
+
+        import java.util.concurrent.ExecutorService;
+        import java.util.concurrent.Executors;
+        import java.util.concurrent.TimeUnit;
+
+        /**
+        * 描述：异步执行场景中,采用传统方式控制主线程
+        *
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/4/1 22:28
+        */
+        public class TraditionAsyncThreadControl {
+            // 线程池:不建议利用Executors工具类进行线程池的创建
+            private static ExecutorService pool = Executors.newFixedThreadPool(2);
+
+            public static void main(String[] args) throws InterruptedException {
+                // [1]查询到数据
+                int[] data = queryData();
+                // [2]对查询到的数据进行处理:通过线程池中的线程进行异步处理
+                for (int i = 0; i < data.length; i++) {
+                    pool.execute(new DataHandleTask(data, i));
+                }
+                // [3]后续操作
+                // 1.主线程虽然完成但是线程池中的线程任然为active状态
+        //        System.out.println("the master thread has finished!!!");
+
+                // 2.线程池执行完成,则池中线程也将关闭,该方法仍然是非阻塞方法,后续代码可被执行
+        //        pool.shutdown();
+        //        System.out.println("the master thread has finished!!!");
+
+                // 3.阻塞当前线程1个小时的时间
+        //        pool.awaitTermination(1, TimeUnit.HOURS);
+        //        System.out.println("the master thread has finished!!!");
+
+                // 4.预期阻塞当前线程1个小时的时间,在池期间线程池中任务若是全部成功执行完成,则阻塞结束,所有线程结束（推荐）
+                pool.shutdown();
+                pool.awaitTermination(1, TimeUnit.HOURS);
+                System.out.println("the master thread has finished!!!");
+            }
+
+            static int[] queryData() {
+                int[] data = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+                return data;
+            }
+
+            private static class DataHandleTask implements Runnable {
+                private final int[] data;
+                private final int index;
+
+                private DataHandleTask(int[] data, int index) {
+                    this.data = data;
+                    this.index = index;
+                }
+
+                @Override
+                public void run() {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    if (data[index] % 2 == 0) {
+                        data[index] = data[index] * 2;
+                    }
+                    System.out.println(Thread.currentThread().getThreadGroup());
+                    System.out.println("the data of index of " + index + " has been precessed already");
+                }
+            }
+
+        }
+    ````
+- **案例：** 异步执行场景中,采用CountDownLatch进行线程间的控制
+    ````java
+        package com.dennis.conccurency.countdownlatch.chapter01;
+
+        import java.util.concurrent.CountDownLatch;
+        import java.util.concurrent.ExecutorService;
+        import java.util.concurrent.Executors;
+        import java.util.concurrent.TimeUnit;
+
+        /**
+        * 描述：异步执行场景中,采用CountDownLatch进行线程间的控制
+        *
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/4/2 10:30
+        */
+        public class CountDLatchAsyncThreadControl {
+            // 线程池:不建议利用Executors工具类进行线程池的创建
+            private static ExecutorService pool = Executors.newFixedThreadPool(2);
+
+            public static void main(String[] args) throws InterruptedException {
+                // [1]查询到数据
+                int[] data = queryData();
+                // 创建CountDownLatch变量
+                CountDownLatch latch = new CountDownLatch(data.length);
+
+                // [2]对查询到的数据进行处理:通过线程池中的线程进行异步处理
+                for (int i = 0; i < data.length; i++) {
+                    pool.execute(new CountDLatchAsyncThreadControl.DataHandleTask(data, i, latch));
+                }
+                // [3]后续操作
+                // 1.主线程虽然完成但是线程池中的线程任然为active状态
+        //        System.out.println("the master thread has finished!!!");
+
+                // 2.线程池执行完成,则池中线程也将关闭,该方法仍然是非阻塞方法,后续代码可被执行
+        //        pool.shutdown();
+        //        System.out.println("the master thread has finished!!!");
+
+                // 3.阻塞当前线程1个小时的时间
+        //        pool.awaitTermination(1, TimeUnit.HOURS);
+        //        System.out.println("the master thread has finished!!!");
+
+                // 4.预期阻塞当前线程1个小时的时间,在池期间线程池中任务若是全部成功执行完成,则阻塞结束,所有线程结束（推荐）
+        //        pool.shutdown();
+        //        pool.awaitTermination(1, TimeUnit.HOURS);
+
+                // 5.采用countDownLatch来阻塞住当前线程(优点,逻辑清晰,控制较传统方式根加灵活)
+                // 预期阻塞当前线程1个小时的时间,在池期间线程池中任务若是全部成功执行完成,则阻塞结束,所有线程结束（推荐）
+                pool.shutdown();
+                latch.await(1, TimeUnit.HOURS);
+                System.out.println("the master thread has finished!!!");
+            }
+
+            static int[] queryData() {
+                int[] data = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+                return data;
+            }
+
+            private static class DataHandleTask implements Runnable {
+                private final int[] data;
+                private final int index;
+                private final CountDownLatch latch;
+
+                private DataHandleTask(int[] data, int index, CountDownLatch latch) {
+                    this.data = data;
+                    this.index = index;
+                    this.latch = latch;
+                }
+
+                @Override
+                public void run() {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    if (data[index] % 2 == 0) {
+                        data[index] = data[index] * 2;
+                    }
+                    latch.countDown();
+                    System.out.println("the data of index of " + index + " has been precessed already");
+                }
+            }
+        }
+
+    ````
+- **应用场景**
+     ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200402121629.png)
+### CyclicBarrier
+- **一个可循环使用的屏障阻塞器**
+- **与CountDownLatch的对比：** 其工作发放时类似于CountDownLatch,但他工作线程之间相互阻塞,而CountDownLatch是调用latch.await（）方法所在的线程线程将被阻塞，且CyclicBarrier的一轮阻塞功能可被循环使用（没搞懂，深解析reset()方法）
+- **案例**
+    ````java
+        package com.dennis.conccurency.utils.cyclicbarrier;
+
+        import java.util.concurrent.BrokenBarrierException;
+        import java.util.concurrent.CyclicBarrier;
+        import java.util.concurrent.TimeUnit;
+        import java.util.stream.IntStream;
+
+        /**
+        * 描述：其工作发放时类似于CountDownLatch,但他工作线程之间相互阻塞,
+        * 而CountDownLatch是调用latch.await（）方法所在的线程线程将被阻塞
+        *
+        * 整体执行循序：【2】-->【1】-->【3】
+        *
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/4/2 14:15
+        */
+        public class CyclicBarrierExample01 {
+
+            public static void main(String[] args) throws InterruptedException {
+                CyclicBarrier barrier = new CyclicBarrier(3, () -> {
+                    // 【1】
+                    System.out.println("they three worker-thread has all finished and their blocked status will be canceled !!!");
+                    // 【1】
+                });
+                IntStream.rangeClosed(1, 3).forEach(num -> {
+                    new Thread(() -> {
+                        // 【2】
+                        try {
+                            TimeUnit.SECONDS.sleep(num-1);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        int limit = 1;
+                        for (; limit <= 10; ) {
+                            try {
+                                TimeUnit.MILLISECONDS.sleep(200);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            System.out.println(Thread.currentThread().getName() + "has finished the lift the stone " + limit + " times");
+                            limit++;
+                        }
+                        System.out.println(Thread.currentThread().getName() + "has finished all the task and waiting others");
+                        try {
+                            barrier.await();
+                        } catch (InterruptedException | BrokenBarrierException e) {
+                            e.printStackTrace();
+                        }
+                        // 【2】
+
+                        // 【3】
+                        System.out.println("ok let·s go:says " + Thread.currentThread().getName());
+                        // 【3】
+                    }, "thread-" + num).start();
+                });
+
+                TimeUnit.MILLISECONDS.sleep(2);
+                barrier.reset();
+            }
+        }
+    ````
+### Exchanger:线程间数据交互工具
+- **案例**
+    ````java
+        package com.dennis.conccurency.utils.exchanger;
+
+        import java.util.concurrent.Exchanger;
+        import java.util.concurrent.TimeUnit;
+        import java.util.concurrent.TimeoutException;
+
+        /**
+        * 描述：线程间（pair）数据交换工具类：线程间交互数据,另一个匹配线程若是没有交换点,则当前线程将处于阻塞状态
+        *
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/4/2 19:06
+        */
+        public class ExchangerExample01 {
+            public static void main(String[] args) {
+                Exchanger<Student> exchanger = new Exchanger<>();
+
+                new Thread(() -> {
+                    String threadName = Thread.currentThread().getName();
+                    Student studentA = new Student(threadName, 20);
+
+                    for (; ; ) {
+                        System.out.println(threadName + " is go along to change the data...");
+                        try {
+                            Student studentB = exchanger.exchange(studentA,1,TimeUnit.SECONDS);
+                            System.out.println(threadName + " has get the data from the partner thread:" + studentB);
+                        } catch (InterruptedException | TimeoutException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                }, "thread-A").start();
+
+
+                new Thread(() -> {
+                    String threadName = Thread.currentThread().getName();
+                    Student studentB = new Student(threadName, 30);
+
+                    for (; ; ) {
+                        try {
+                            TimeUnit.SECONDS.sleep(3);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        System.out.println(threadName + " is go along to change the data...");
+                        try {
+                            Student studentA = exchanger.exchange(studentB);
+                            System.out.println(threadName + " has get the data from the partner thread:" + studentA);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                }, "thread-B").start();
+            }
+
+            static class Student {
+                private String name;
+                private int age;
+
+                public Student(String name, int age) {
+                    this.name = name;
+                    this.age = age;
+                }
+
+                public String getName() {
+                    return name;
+                }
+
+                public void setName(String name) {
+                    this.name = name;
+                }
+
+                public int getAge() {
+                    return age;
+                }
+
+                public void setAge(int age) {
+                    this.age = age;
+                }
+
+                @Override
+                public String toString() {
+                    return "Student{" +
+                            "name='" + name + '\'' +
+                            ", age=" + age +
+                            '}';
+                }
+            }
+        }
+    ````
+### 信号量控制对象
+- **案例：使用semaphoer实现显示锁(支持阻塞和非阻塞)**
+    ````java
+        package com.dennis.conccurency.utils.semapphore;
+
+        import java.util.concurrent.Semaphore;
+        import java.util.concurrent.TimeUnit;
+
+        /**
+        * 描述：采用Semaphore实现显示锁
+        *
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/4/2 21:02
+        */
+        public class SemaphoreExample01 {
+
+            public static void main(String[] args) {
+                SemaphoreLock lock = new SemaphoreLock();
+                new Thread(() -> {
+                    try {
+                        lock.lock();
+                        String name = Thread.currentThread().getName();
+                        for (int i = 0; i <= 10; i++) {
+                            TimeUnit.MILLISECONDS.sleep(1000);
+                            System.out.println(name + " is deal with shared data!!!");
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        lock.unLock();
+                    }
+                }, "thread-A").start();
+
+                Thread tB = new Thread(() -> {
+
+                    try {
+                        // 阻塞锁
+                        lock.lock();
+                        // 非阻塞锁
+        //                lock.tryLock();
+                        // 自定义阻塞时长锁
+        //                lock.tryLock(1, TimeUnit.SECONDS);
+                        String name = Thread.currentThread().getName();
+                        for (int i = 0; i <= 10; i++) {
+                            TimeUnit.MILLISECONDS.sleep(1000);
+                            System.out.println(name + " is deal with shared data!!!");
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        lock.unLock();
+                    }
+                }, "thread-B");
+                // jvm停止时间->jvm中所有非守护线程退出了,则jvm退出
+        //        tB.setDaemon(true);
+                tB.start();
+            }
+
+            static class SemaphoreLock extends Semaphore {
+
+                private Thread currentThread;
+
+                public SemaphoreLock() {
+                    // 持有一张许可证
+                    super(1);
+                }
+
+                // 阻塞锁
+                private void lock() {
+                    try {
+                        // 获取许可证，若没有许可证可取,则当前线程将处于阻塞状态
+                        this.acquire();
+                        currentThread = Thread.currentThread();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                // 非阻塞锁
+                private void tryLock() throws Exception {
+                    // 获取许可证，若没有许可证可取,则返回false否则返回true
+                    if (!this.tryAcquire())
+                        throw new Exception("failed to get the lock source");
+                    currentThread = Thread.currentThread();
+                }
+
+                // 自定义阻塞时长锁
+                private void tryLock(long time, TimeUnit timeUnit) throws Exception {
+                    // 获取许可证，若没有许可证可取,则返回false否则返回true
+                    if (!this.tryAcquire(time, timeUnit))
+                        throw new Exception("failed to get the lock source");
+                    currentThread = Thread.currentThread();
+                }
+
+                private void unLock() {
+                    if (Thread.currentThread() != currentThread) {
+                        return;
+                    }
+                    this.release();
+                }
+            }
+        }
+    ````
+
 # 阶段四：并发编程深入讨论
