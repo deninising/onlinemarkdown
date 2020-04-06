@@ -3224,5 +3224,606 @@
             }
         }
     ````
+### Condition线程条件控制器
+- **说明：Condition对象是通过ReentrantLock.newCondition()方法创建，该方法将ReentrantLock对象与Condition对象进行了原子关联操作,锁操作中并不会操作monitor（与Object.await()和synchronized关键字实现同步机制的最大区别）**
+- **采用condition实现生产者-消费者模式**
+    - **案例一**
+        ````java
+            package com.dennis.conccurency.utils.condition;
+
+            import java.util.concurrent.ExecutorService;
+            import java.util.concurrent.Executors;
+            import java.util.concurrent.TimeUnit;
+            import java.util.concurrent.locks.Condition;
+            import java.util.concurrent.locks.Lock;
+            import java.util.concurrent.locks.ReentrantLock;
+
+            /**
+            * 描述：采用condition实现生产者-消费者模式--->与com.dennis.conccurency.chapter07中的生产者消费模式（object.wait 和 synchronized()）对比
+            *
+            * @author Dennis
+            * @version 1.0
+            * @date 2020/4/3 21:21
+            */
+            public class ConditionExample01 {
+
+                // the Lock is associated with Condition,can treat them as a atomic-source
+                private final static Lock LOCK = new ReentrantLock();
+                private final static Condition CONDITION = LOCK.newCondition();
+                // the Lock is associated with Condition,can treat them as a atomic-source
+
+                private static int sharedData = 0;
+
+                private static volatile boolean consumed = true;
+
+                private void produce() {
+                    try {
+
+                    /*The lock associated with this {@code Condition} is atomically
+                        released and the current thread becomes disabled for thread scheduling
+                        purposes and lies dormant*/
+
+                        LOCK.lock(); // the same function as monitor enter
+                        while (!consumed) {
+                            CONDITION.await(); // the same function as monitor await
+                        }
+
+                        sharedData++;
+                        TimeUnit.SECONDS.sleep(1);
+                        System.out.println(Thread.currentThread().getName() + " has already produced the data:" + sharedData);
+                        consumed = false;
+                        CONDITION.signalAll();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        LOCK.unlock();
+                    }
+
+                }
+
+                private void consume() {
+                    try {
+                        /*The lock associated with this {@code Condition} is atomically
+                        released and the current thread becomes disabled for thread scheduling
+                        purposes and lies dormant*/
+
+                        LOCK.lock(); // monitor enter
+                        while (consumed) { // monitor await
+                            CONDITION.await(); // object.await()
+                        }
+
+                        TimeUnit.SECONDS.sleep(1);
+                        System.out.println(Thread.currentThread().getName() + " has already consume the data：" + sharedData);
+                        consumed = true;
+                        CONDITION.signalAll(); // object.notifyAll()
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        LOCK.unlock();
+                    }
+
+                }
+
+                public static void main(String[] args) {
+                    ConditionExample01 example01 = new ConditionExample01();
+
+                    Runnable consumeTask = () -> {
+                        for (; ; ) {
+                            example01.consume();
+                        }
+                    };
+                    Runnable produceTask = () -> {
+                        for (; ; ) {
+                            example01.produce();
+                        }
+                    };
+
+                    ExecutorService pool = Executors.newFixedThreadPool(5);
+                    pool.submit(consumeTask);
+                    pool.submit(consumeTask);
+                    pool.submit(consumeTask);
+                    pool.submit(produceTask);
+                    pool.submit(produceTask);
+                }
+
+            }
+        ````
+    - **案例二**
+        ````java
+            package com.dennis.conccurency.utils.condition;
+
+            import java.util.LinkedList;
+            import java.util.concurrent.ExecutorService;
+            import java.util.concurrent.Executors;
+            import java.util.concurrent.TimeUnit;
+            import java.util.concurrent.locks.Condition;
+            import java.util.concurrent.locks.ReentrantLock;
+
+            /**
+            * 描述：condition版生产者消费者实现方式2
+            *
+            * @author Dennis
+            * @version 1.0
+            * @date 2020/4/3 22:05
+            */
+            public class ConditionExample02 {
+                private final static ReentrantLock LOCK = new ReentrantLock();
+                private final static Condition PRODUCE_COND = LOCK.newCondition();
+                private final static Condition CONSUME_COND = LOCK.newCondition();
+                private final static LinkedList<Long> shareData = new LinkedList<>();
+                private final static int CAPACITY = 100;
+
+                private static void produce() {
+                    try {
+                        LOCK.lock();
+                        if (shareData.size() == CAPACITY) {
+                            PRODUCE_COND.wait();
+                        }
+
+                        long data = System.currentTimeMillis();
+                        shareData.addLast(data);
+                        System.out.println("P has produced the shared-data :" + data);
+                        CONSUME_COND.signalAll();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        LOCK.unlock();
+                    }
+                }
+
+                private static void consume() {
+                    try {
+                        LOCK.lock();
+                        if (shareData.size() == 0) {
+                            CONSUME_COND.wait();
+                        }
+                        Long data = shareData.removeFirst();
+                        System.out.println("C has consumed the shared-data :" + data);
+                        PRODUCE_COND.signalAll();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        LOCK.unlock();
+                    }
+                }
+
+
+                public static void main(String[] args) {
+                    Runnable consumeTask = () -> {
+                        while (true) {
+                            consume();
+                            try {
+                                TimeUnit.MILLISECONDS.sleep(300);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    };
+
+                    Runnable produceTask = () -> {
+                        while (true) {
+                            produce();
+                            try {
+                                TimeUnit.MILLISECONDS.sleep(300);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    };
+
+                    ExecutorService threadPool = Executors.newFixedThreadPool(50);
+                    threadPool.submit(consumeTask);
+                    threadPool.submit(consumeTask);
+                    threadPool.submit(consumeTask);
+                    threadPool.submit(produceTask);
+                    threadPool.submit(produceTask);
+                }
+            }
+        ````
+### locks
+- **ReentrantLock：可重入独占显示锁** 
+    - **案例：**
+        ````java
+            package com.dennis.conccurency.utils.locks;
+
+            import java.util.ArrayList;
+            import java.util.concurrent.TimeUnit;
+            import java.util.concurrent.locks.ReentrantLock;
+            import java.util.stream.IntStream;
+
+            /**
+            * 描述：ReentrantLock:可重入显示锁 -->相较于synchronized关键字更加灵活可控
+            *
+            * @author Dennis
+            * @version 1.0
+            * @date 2020/4/3 16:43
+            */
+            public class ReentrantLockExample01 {
+                // 公平锁：确保所有获取锁资源线程的获取机率基本相等,但会降低程序总体的吞吐量-->当线程持有锁的时间相对较长或者线程请求锁的平均时间间隔较长时，
+                // 可以考虑使用公平策略。此时线程调度产生的耗时间隔占比较小,吞吐量影响会较小。
+                private final static ReentrantLock REENTRANT_LOCK = new ReentrantLock(true);
+
+                public static void main(String[] args) {
+
+                /*  IntStream.rangeClosed(1, 5).forEach(num -> {
+                        new Thread(() -> {
+                            for (; ; ) {
+                                workWithLock();
+                            }
+                        }, "thread-reentrant-" + num).start();
+                    });
+
+                    IntStream.rangeClosed(1, 5).forEach(num -> {
+                        new Thread(() -> {
+                            for (; ; ) {
+                                workWithSync();
+                            }
+                        }, "thread-sync-" + num).start();
+                    });*/
+
+                    ArrayList<Thread> arrayList = new ArrayList<>();
+                    IntStream.rangeClosed(1, 5).forEach(num -> {
+                        Thread thread = new Thread(() -> {
+                            for (; ; ) {
+                                workWithInterruptLock();
+                            }
+                        }, "thread-reentrant-" + num);
+
+                        thread.start();
+
+                        arrayList.add(thread);
+                    });
+                    int count = 1;
+                    // 每隔2秒钟选择一个线程去打断它,打断一个线程仅仅是改变了一下打断标记,线程任然在循行且其标记会恢复到原始状态
+                    while (true) {
+                        int index = count / 5;
+                        count++;
+                        try {
+                            TimeUnit.SECONDS.sleep(2);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        Thread thread = arrayList.get(index);
+
+                        if (!thread.isInterrupted()) {
+                            thread.interrupt();
+                        }
+                    }
+
+                }
+
+                // 类似于普通的锁
+                private static void workWithLock() {
+                    try {
+                        REENTRANT_LOCK.lock(); // 类似于synchronised monitor entry
+                        System.out.println("thread:" + Thread.currentThread().getName() + " has got the reentrantLock and working......");
+                        TimeUnit.SECONDS.sleep(1);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        REENTRANT_LOCK.unlock(); // synchronised end the monitor
+                    }
+                }
+
+                // 可支持打断的锁
+                private static void workWithInterruptLock() {
+                    try {
+                        REENTRANT_LOCK.lockInterruptibly(); // 类似于synchronised monitor entry
+                        System.out.println("thread:" + Thread.currentThread().getName() + " has got the reentrantLock and working......");
+                        TimeUnit.SECONDS.sleep(5);
+                    } catch (InterruptedException e) {
+                        System.out.println(Thread.currentThread().getName() + " has been interrupted when it is blocked waiting to get the lock source");
+                    } finally {
+                        if (REENTRANT_LOCK.isHeldByCurrentThread()) {
+                            REENTRANT_LOCK.unlock(); // synchronised end the monitor
+                        }
+                    }
+                }
+
+                private static void workWithSync() {
+                    synchronized (ReentrantLockExample01.class) {
+                        System.out.println("thread:" + Thread.currentThread().getName() + " has got the syn syncLock and working.....");
+                        try {
+                            TimeUnit.SECONDS.sleep(2);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+
+        ````
+- **ReentrantReadWriteLock：读写分离锁**
+    - **案例：**
+        ````java
+            package com.dennis.conccurency.utils.locks;
+
+            import java.util.LinkedList;
+            import java.util.concurrent.ExecutorService;
+            import java.util.concurrent.Executors;
+            import java.util.concurrent.TimeUnit;
+            import java.util.concurrent.locks.Lock;
+            import java.util.concurrent.locks.ReadWriteLock;
+            import java.util.concurrent.locks.ReentrantReadWriteLock;
+            import java.util.stream.Collectors;
+
+            /**
+            * 描述：读写锁:只用lock>>>问题：要是大量线程为读线程，那么写线程将很难抢到锁资源(反之亦然)-->悲观锁
+            * 100 threads
+            * 99-->read-threads
+            * 01-->write-thread
+            * <p>
+            * W   W  --> X （排他执行）
+            * W   R  --> X （排他执行）
+            * R   W  --> X （排他执行）
+            * R   R  --> O （同步执行）
+            *
+            * @author Dennis
+            * @version 1.0
+            * @date 2020/4/3 17:44
+            */
+            public class ReadWriteLockExample01 {
+                private static final ReadWriteLock READ_WRITE_LOCK = new ReentrantReadWriteLock();
+                private static final Lock READ_LOCK = READ_WRITE_LOCK.readLock();
+                private static final Lock WRITE_LOCK = READ_WRITE_LOCK.writeLock();
+                private static final LinkedList<Long> sharedData = new LinkedList<>();
+
+
+                private void read() {
+                    try {
+                        READ_LOCK.lock();
+                        String result = sharedData.stream().map(String::valueOf).collect(Collectors.joining(" >>> ", "R-", ""));
+                        int priority = Thread.currentThread().getPriority();
+                        System.out.println(priority + "--" + Thread.currentThread().getName() + " has read the data:" + result);
+                        TimeUnit.MILLISECONDS.sleep(10);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        READ_LOCK.unlock();
+                    }
+                }
+
+                private void write() {
+                    try {
+                        WRITE_LOCK.lock();
+                        long result = System.currentTimeMillis();
+                        sharedData.addLast(result);
+                        int priority = Thread.currentThread().getPriority();
+                        System.out.println(priority + "--" + Thread.currentThread().getName() + " has write the data: w-" + result);
+                        TimeUnit.MILLISECONDS.sleep(10);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        WRITE_LOCK.unlock();
+                    }
+                }
+
+                public static void main(String[] args) {
+                    ReadWriteLockExample01 example01 = new ReadWriteLockExample01();
+
+                    ExecutorService executorService = Executors.newFixedThreadPool(11);
+
+                    Runnable readTask = () -> {
+                        for (; ; ) {
+                            example01.read();
+                        }
+                    };
+
+                    Runnable writeTask = () -> {
+                        for (; ; ) {
+                            example01.write();
+                        }
+                    };
+                    executorService.submit(readTask);
+                    executorService.submit(readTask);
+                    executorService.submit(readTask);
+                    executorService.submit(readTask);
+                    executorService.submit(readTask);
+                    executorService.submit(readTask);
+                    executorService.submit(readTask);
+                    executorService.submit(readTask);
+                    executorService.submit(readTask);
+                    executorService.submit(readTask);
+                    // ?? 写线程较读线程貌似更容易获取到cpu的执行权
+                    executorService.submit(writeTask);
+                }
+            }
+        ````
+- **StampedLock：推荐使用**
+    - **StampedLock的主要特点概括一下，有以下几点：**
+        1. 所有获取锁的方法，都返回一个邮戳（Stamp），Stamp为0表示获取失败，其余都表示成功；
+        2. 所有释放锁的方法，都需要一个邮戳（Stamp），这个Stamp必须是和成功获取锁时得到的Stamp一致；
+        3. StampedLock是不可重入的；（如果一个线程已经持有了写锁，再去获取写锁的话就会造成死锁）
+        4. StampedLock有三种访问模式：
+            ①Reading（读模式）：功能和ReentrantReadWriteLock的读锁类似
+            ②Writing（写模式）：功能和ReentrantReadWriteLock的写锁类似
+            ③Optimistic reading（乐观读模式）：这是一种优化的读模式。
+        5. StampedLock支持读锁和写锁的相互转换
+        我们知道RRW中，当线程获取到写锁后，可以降级为读锁，但是读锁是不能直接升级为写锁的。
+        StampedLock提供了读锁和写锁相互转换的功能，使得该类支持更多的应用场景。
+        6. 无论写锁还是读锁，都不支持Conditon等待
+**我们知道，在ReentrantReadWriteLock中，当读锁被使用时，如果有线程尝试获取写锁，该写线程会阻塞。但是，在Optimistic reading中，即使读线程获取到了读锁，写线程尝试获取写锁也不会阻塞，这相当于对读模式的优化，但是可能会导致数据不一致的问题。所以，当使用Optimistic reading获取到读锁时，必须对获取结果进行校验。**
+    - **案例一：悲观读**
+
+        ````java
+            package com.dennis.conccurency.utils.locks;
+
+            import java.util.ArrayList;
+            import java.util.concurrent.ExecutorService;
+            import java.util.concurrent.Executors;
+            import java.util.concurrent.TimeUnit;
+            import java.util.concurrent.locks.StampedLock;
+            import java.util.stream.Collectors;
+
+            /**
+            * 描述：强力推荐使用的锁StampLock(乐观锁),采用StampedLock代替ReentrantReadWriteLock锁实现读写分离
+            *
+            * @author Dennis
+            * @version 1.0
+            * @date 2020/4/3 22:56
+            */
+            public class StampedLockExample01 {
+                private final static StampedLock LOCK = new StampedLock();
+
+                private final static ArrayList<Long> SHARED_DATA = new ArrayList<>();
+
+                private void write() {
+                    long stamped = -1;
+                    try {
+                        stamped = LOCK.writeLock();
+                        long data = System.currentTimeMillis();
+                        System.out.println("W-data-" + data);
+                        SHARED_DATA.add(data);
+                        TimeUnit.MILLISECONDS.sleep(200);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        LOCK.unlock(stamped);
+                    }
+                }
+
+                // 悲观读
+                private void read() {
+                    long stamped = -1;
+                    try {
+                        stamped = LOCK.readLock();
+                        String result = SHARED_DATA.stream().map(String::valueOf).collect(Collectors.joining(">>", "R-data-", ""));
+                        System.out.println(result);
+                        TimeUnit.MILLISECONDS.sleep(200);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        LOCK.unlock(stamped);
+                    }
+                }
+
+                public static void main(String[] args) {
+                    StampedLockExample01 example = new StampedLockExample01();
+                    Runnable readTask = () -> {
+                        for (; ; ) {
+                            example.read();
+                        }
+                    };
+
+                    Runnable writeTask = () -> {
+                        for (; ; ) {
+                            example.write();
+                        }
+                    };
+
+                    ExecutorService pool = Executors.newFixedThreadPool(11);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(writeTask);
+                }
+            }
+        ````
+    - **案例二：乐观读**
+        ````java
+            package com.dennis.conccurency.utils.locks;
+
+            import java.util.ArrayList;
+            import java.util.List;
+            import java.util.concurrent.ExecutorService;
+            import java.util.concurrent.Executors;
+            import java.util.concurrent.TimeUnit;
+            import java.util.concurrent.locks.StampedLock;
+            import java.util.stream.Collectors;
+
+            /**
+            * 描述：
+            *
+            * @author Dennis
+            * @version 1.0
+            * @date 2020/4/4 16:31
+            */
+            public class StampedLockExample02 {
+                private final static StampedLock LOCK = new StampedLock();
+
+                private final static List<Long> SHARED_DATA = new ArrayList<>();
+
+                private void write() {
+                    long stamp = -1;
+                    try {
+                        stamp = LOCK.writeLock();
+            //            System.out.println("w-stamp:"+stamp);
+                        long data = System.currentTimeMillis();
+                        System.out.println("w-data-" + data);
+                        SHARED_DATA.add(data);
+                        TimeUnit.MILLISECONDS.sleep(200);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        LOCK.unlock(stamp);
+                    }
+                }
+
+                // 乐观读
+                /**
+                * 使用乐观读锁访问共享资源
+                * 注意：乐观读锁在保证数据一致性上需要拷贝一份要操作的变量到方法栈，并且在操作数据时候可能其他写线程已经修改了数据，
+                * 而我们操作的是方法栈里面的数据，也就是一个快照，所以最多返回的不是最新的数据，但是一致性还是得到保障的。
+                */
+                private void read() {
+                    long stamp = LOCK.tryOptimisticRead();  // 非阻塞获取版本信息
+                    List<Long> currentData = SHARED_DATA;   // 拷贝变量到线程本地堆栈
+                    if (!LOCK.validate(stamp)) {            // 校验不通过则转为悲观锁
+                        try {
+                            stamp = LOCK.readLock();        // 获取读锁
+                            currentData = SHARED_DATA;      // 拷贝变量到线程本地堆栈
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        } finally {
+                            LOCK.unlockRead(stamp);         // 释放悲观锁
+                        }
+                    }
+
+                    // 使用线程本地堆栈里面的数据进行操作
+                    String result = currentData.stream().map(String::valueOf).collect(Collectors.joining(">>", "R-data-", ""));
+                    System.out.println(result);
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(200);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                public static void main(String[] args) {
+                    StampedLockExample02 example = new StampedLockExample02();
+                    Runnable readTask = () -> {
+                        for (; ; ) {
+                            example.read();
+                        }
+                    };
+
+                    Runnable writeTask = () -> {
+                        for (; ; ) {
+                            example.write();
+                        }
+                    };
+
+                    ExecutorService pool = Executors.newFixedThreadPool(11);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(readTask);
+                    pool.submit(writeTask);
+                }
+            }
+        ````
 
 # 阶段四：并发编程深入讨论
