@@ -1375,7 +1375,7 @@
 
 ## Comparator比较器
 - 通用比较方法
-    
+  
     - Comparator.comparing()
 - 特定比较方法(已知比较类型的情况下，推荐使用特定比较方法)
     - Comparator.comparingInt()

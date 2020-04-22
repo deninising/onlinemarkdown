@@ -3726,8 +3726,8 @@
                 }
             }
         ````
-    - **案例二：乐观读**
-        ````java
+    - **案例二：乐观锁**
+         ````java
             package com.dennis.conccurency.utils.locks;
 
             import java.util.ArrayList;
