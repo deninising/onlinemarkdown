@@ -7,7 +7,7 @@
 # 阶段一：java多线程基础知识
 ## 快速认识线程
 - **线程的生命周期**
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200223225714.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200223225714.png)
     - NEW：用new关键字创建一个Thread对象，此时并没有线程创建，仅仅创建了表示一个线程的Java对象，在未执行start()方法之前线程并不存在。
     - RUNNABLE：当Thread对象调用start()方法时，即在JVM中创建一个真正的线程，此时该线程位于可执行队列中，等待着CPU的调度，所以称之为可执行状态。**严格来讲，RUNNABLE状态的线程只能意外终止或是进入RUNNING状态，即使对线程调用sleep()、wait()或是其他block的OI操作也必须等到CPU对其进行调度后（进入到RUUNNING状态）才能显示阻塞**
     - BLOCKED：在RUNNING状态下，当执行到sleep()、wait()或是IO操作亦或是执行到对锁资源的获取时，线程将进入到阻塞状态。
@@ -15,7 +15,7 @@
     - TERMINATED：线程的最终状态，该状态下不能切换到其何其他状态，标志着一个线程的生命周期的结束。
 ## 线程start（）方法解析
 - 源码：
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200224164201.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200224164201.png)
 
 该方法为线程安全的，可看见其内部调用start0()本地方法，该方法中会使JVM去调用当前线程的逻辑执行单元run()方法，以到达最终目的。
 ## 模板方法在Thread中的应用(重写thread的run()方法)
@@ -186,7 +186,7 @@
     ```
     - **说明：** 定义Runnable的子类并实现其中的run()方法，将业务逻辑执行单元置于run()方法中，调用带Runnable参数的Thread（Runnable r）构造函数创建线程对象，当JVM调用该线程的run()方法时便会检验线程的target成员变量，若不为空则执行target中的业务逻辑
     **源码：**
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200224163909.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200224163909.png)
 
 ## 守护线程
 - **JVM何时退出：** The Java Virtual Machine exits when the only threads running are all daemon threads.虚拟机只有当虚拟机中所有的线程为非守护线程的时候，才会正常自动退出。**当希望关闭某些线程，或是JVM进程结束的时候，一些线程会相应的自动退出，则可以考虑将该线程设计为守护线程**
@@ -281,16 +281,16 @@
     }
     ```
 - **sleep()和yield()的区别：**
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200224222931.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200224222931.png)
 ### setPriority(int nun)设置线程优先级
 - **注意：**
     - 不建议业务的实现强依赖线程的优先级，因为的优先级效果受到当前CPU空闲状态影响，有的时候达不到业务想要的效果
     - 一个线程的优先级最大大不过所在线程组的最大优先级
     - 线程默认的优先级和其父线程的优先级相同
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200224225328.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200224225328.png)
 ### public void interrupt()
 - 以下方法为可中断方法，调用时会使得线程进入阻塞状态，调用interrupt()方法后(底层调用interrupt0()本地方法)可将线程的interrupt flag置为true，可中断方法被打断并检测到中断的signal随之抛出InterruptedException异常。
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200226204556.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200226204556.png)
 - **案例：(代码注释部分是重点)**
     ```java
     package com.dennis.conccurency.chapter04;
@@ -352,7 +352,7 @@
 - 只是用来获取对应线程的interrupt flag是否处于中断状态
 ### public static boolean interrupt()
 - 获取到当前线程的interrupt flag状态值，并擦除标记
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200226212607.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200226212607.png)
 - **案例：**
     ```java
     package com.dennis.conccurency.chapter04;
@@ -641,15 +641,15 @@
     }
     ```
 - **jconsole查看：**
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200229141443.png)
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200229141539.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200229141443.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200229141539.png)
 - **jstack工具查看：**
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200229142938.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200229142938.png)
 - **同步代码块的执行机制：**
     - 获取互斥资源
-        ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200229164158.png)![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200229164235.png)
+        ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200229164158.png)![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200229164235.png)
     - 释放互斥资源
-        ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200229164315.png)
+        ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200229164315.png)
 - **同步方法使用的要点：**
     1. 与monitor关联的对象（互斥资源）不能为空
     2. synchronized的作用域不能太大，做好做到精确控制使用共享资源的代码块
@@ -661,7 +661,7 @@
 
 ## 程序死锁及诊断
 ###  死锁：
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200229175306735.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200229175306735.png)
 - **交叉使用互斥资源引起的死锁案例：**
     ```java
     package com.dennis.conccurency.chapter06;
@@ -720,17 +720,17 @@
     ```
 ### 死锁的诊断
  - **交叉引起的死锁借助jstack可以很好的捕捉到：**
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200229182015.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200229182015.png)
 可以看到个线程对锁资源的持有情况
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200229182314.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200229182314.png)
 底部也会显示地给出死锁
 - **其他情况引起的死锁是具体原因采取相应的诊断方法**
 ## 线程间的通信（进程内通信）
 ### 同步阻塞与异步阻塞
 - **同步阻塞：**
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200229224446.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200229224446.png)
 - **异步阻塞：**
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200229224525.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200229224525.png)
 ### 消费者和生产者模式
 - **单线程版：**
     ```java
@@ -945,8 +945,8 @@
     }
     ```
 - **wait、notify、notifyAll、monitor、thread之间的关系**
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200301111712.png)
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200301111757.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200301111712.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200301111757.png)
 ## 自定义显示锁
 - **synchronised关键字的缺陷：是一种排他式的数据同步机制，且当线程多个线程在竞争锁资源的时候会存在以下缺陷**
     - 无法控制阻塞时长
@@ -1199,7 +1199,7 @@
     ```
 ## 自定义线程池
 - **框架示意图**
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200313192234.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200313192234.png)
 - **代码：详见com.dennis.conccurency.chapter10**
 
 ## 类加载器
@@ -1208,7 +1208,7 @@
     - 扩展加载器：Ext ClassLoader
     - 系统加载器：Application ClassLoader
 - **三者关系图：**
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200316120856.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200316120856.png)
 - **实例代码：**
     - 根加载器:最顶层加载器，没有任何父类加载器，有C++编写，负责加载虚拟机核心类库
         ````java
@@ -1451,7 +1451,7 @@
         ````
 ## 双亲委托机制
 - **框架示意图**
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200316123223.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200316123223.png)
 **说明：部分类容详见第九章和第十章（建议多次阅读）**
 
 # 阶段二：多线程设计模式详解
@@ -1536,7 +1536,7 @@
 - **场景描述：虽然Thread为我们提供了可获取状态，以及判断是否alive的方法，但是这些方法均是针对线程本身的，而我们提交的任务Runnable在运行过程中所处的状态如何是无法直接获得的，比如它什么时候开始，什么时候结束，最不好的一种体验是无法获得Runnable任务执行后的结果。一般情况下想要获得最终结果，我们不得不为Thread或者Runnable传人共享变量，但是在多线程的情况下，共享变量将导致资源的竞争从而增加了数据不一致性的安全隐患。**
 - **当某个对象发生状态改变需要通知第三方的时候，观察者模式就特别适合胜任这样的工作**
 - **类图框架：**
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200317162845.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200317162845.png)
 - **观察者接口：** 该接口主要是暴露给调用者使用的，其中四个枚举类型分别代表了当前任务执行生命周期的各个阶段，具体如下。
 
     ````java
@@ -1803,7 +1803,7 @@
     }
     ````
 - **关键点总结：**
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200317164454.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200317164454.png)
 ## Single Thread Execution设计模式
 - **场景：Single Thread Execution模式是指在同一时刻只能有一个线程去访问共享资源，就像独木桥一样每次只允许一人通行，简单来说，Single Thread Execution 就是采用排他式的操作保证在同一时刻只能有一个线程访问共享资源。**
 - **登机案件案例：**
@@ -1913,9 +1913,9 @@
     - 说明：本章类容详见chapter16中哲学家吃面问题
 ## 读写分离设计模式
 - **场景：**
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200318173119.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200318173119.png)
 - **类图设计：**
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200318173634.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200318173634.png)
     - **说明：** 以上各类代码详见D:\Code\github\thread_learn\src\main\java\com\dennis\conccurency\chapter15
 - **ShareData类：**
     ````java
@@ -2041,8 +2041,8 @@
     }
     ````
 - **总结：**
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200318174351.png)
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200318174447.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200318174351.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200318174447.png)
 ## 不可变对象设计模式（对该类下一个对象的每次操作都会返回一个新的对象）
 **该节类容详见第十八章**
 - **线程不安全累加器及synchronized方式解决不安全方式**
@@ -2195,9 +2195,9 @@
     ````
 ## Future模式
 - **场景：**
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200320104436.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200320104436.png)
 - **类图设计：**
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200320105033.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200320105033.png)
 - **Future接口：**
     ````java
     package com.dennis.conccurency.chapter17;
@@ -2480,7 +2480,7 @@
         ````
 ## Guarded Suspension 设计模式
 - **场景：**
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200320114255.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200320114255.png)
 - **实例代码：**
     ````java
     package com.dennis.conccurency.chapter18;
@@ -2958,7 +2958,7 @@
 
     ````
 - **应用场景**
-     ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200402121629.png)
+     ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200402121629.png)
 ### CyclicBarrier
 - **一个可循环使用的屏障阻塞器**
 - **与CountDownLatch的对比：** 其工作发放时类似于CountDownLatch,但他工作线程之间相互阻塞,而CountDownLatch是调用latch.await（）方法所在的线程线程将被阻塞，且CyclicBarrier的一轮阻塞功能可被循环使用（没搞懂，深解析reset()方法）

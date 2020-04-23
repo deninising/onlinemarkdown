@@ -4,15 +4,16 @@
     </h1>
 </center>
 
-## 类的加载机制
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200422105244.png)
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200422105900.png)
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200422110446.png)
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200422112058.png)
+## 类的加载、连接与初始化
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200422105244.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200422105900.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200422110446.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200422112058.png)
 - **类的生命周期：**
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200422114203.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200423111936.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200422114203.png)
 - **类的加载时机：**
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200422113625.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200422113625.png)
     - 虚拟机规范中没有强行的规定类加载时机，这点交予虚拟机实现者自由控制，唯一能确定的是类的加载一定会在类的初始阶段之前
 - **类的初始化时机：被Java程序首次主动使用时**
     - 遇到new **（创建类的实例）**、getstatic **（访问类的静态变量）**、putstatic **（对类的静态变量赋值）**、invokestatic **（调用类的静态方法）** ,这4条字节码指令
@@ -125,7 +126,9 @@
         package com.dennis.classloading;
 
         /**
-        * 描述：运行期常量与编译期常量的区别：运行期常量不会进去常量池，但是编译期常量会存储到常量池中
+        * 描述：运行期常量与编译期常量的区别：
+        * 【1】运行期常量不会进入常量池，但是编译期常量会存储到常量池中
+        * 【2】运行期常量要求定义该常量的类或者接口执行初始化，而编译期只需要执行类或者接口的加载
         *
         * @author Dennis
         * @version 1.0
@@ -149,6 +152,7 @@
                 System.out.println("class Parent has been initialized!");
             }
         }
+
     ````
 - **数组创建的本质**
     ````java
@@ -193,31 +197,58 @@
     ````java
         package com.dennis.classloading;
 
-        import java.util.UUID;
+    import java.util.UUID;
 
-        /**
-        * 描述：接口加载的规则同类的加载规则相同
-        *
-        * @author Dennis
-        * @version 1.0
-        * @date 2020/4/22 19:12
-        */
-        public class ClassLoadTest05 {
-            public static void main(String[] args) {
-                System.out.println(Child05.C_STR);
+    /**
+    * 描述：接口加载的规则同类的加载规则相同,
+    * 但是接口的初始化规则与类大不相同：
+    * 【1】一个类的初始化并不要求必须初始化它实现的接口
+    * 【2】一个接口的初始化也不要求必须对它的父接口进行初始化
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/4/22 19:12
+    */
+    public class ClassLoadTest05 {
+        public static void main(String[] args) {
+            // 子接口通过多态的方式调用父接口的运行期常量，即使父接口进行了初始化但其子接口也不执行初始化===>对谁进行了主动使用，就对谁进行初始化
+            System.out.println(Child05.P_STR);
+            // 子接口执行初始化,其父接口不执行初始化
+            System.out.println(Child05.C_STR);
+            // 对于包含编译期常量的类或接口而言，其他类对该常量的调用，只要求编译期常量所在的类或者接口执行加载，不要求执行初始化，且常量会存储在调用该常量的方法所在的类的常量池当中
+            // 编译期常量与运行期常量的区别：运行期常量需要类或者接口的运行期环境，因此需要对应的类或者接口执行初始化，而编译期常量只需要对应的类或者接口执行类加载即可
+            System.out.println(Child05.C_STRING) ;
+            System.out.println(Child05.P_STRING) ;
+            System.out.println(Parent05.P_STRING) ;
+        }
+    }
+
+    interface Parent05 {
+        // 接口中无法定义static{}代码块，通过一下方式模拟类的初始化代码块，初始化阶段一下输出必执行
+        public static final Thread thread = new Thread() {
+            {
+                System.out.println("interface Parent05 has been initialized");
             }
-        }
+        };
+        public static String P_STRING = "hello parent interface";
+        public static final String P_STR = UUID.randomUUID().toString();
+    }
 
-        interface Parent05 {
-            public static final String P_STR = "hello parent interface";
-        }
+    interface Child05 extends Parent05 {
+        // 接口中无法定义static{}代码块，通过一下方式模拟类的初始化代码块，初始化阶段一下输出必执行
+        public static final Thread thread = new Thread() {
+            {
+                System.out.println("interface Child05 has been initialized");
+            }
+        };
+        public static String C_STRING = "hello child interface";
+        public static String C_STR = UUID.randomUUID().toString();
+    }
 
-        interface Child05 extends Parent05 {
-            public static  String C_STRING = "hello child interface";
-            public static  String C_STR = UUID.randomUUID().toString();
-        }
-    ````
-- **类加载过程综合练习案例：非常重要**
+
+
+     ````
+- **类加载过程综合练习案例：对于理解类加载顺序和类初始化顺序非常重要**
     ````java
         package com.dennis.classloading;
 
@@ -296,7 +327,128 @@
                 return counter2;
             }
         }
-
     ````
+- **反射是对类的一种主动使用：**
+    ````java
+        package com.dennis.classloading;
+        /**
+        * 描述： 反射是对类的一种主动使用，而ClassLoader.load("xxx.xxx.xxx")只是对类的.class文件的一种加载而非主动使用，所以不会初始化
+        *
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/4/23 17:51
+        */
+        public class ClassLoadTest07 {
+            public static void main(String[] args) throws ClassNotFoundException {
+                ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+                // 只是显示的加载类的.class文件到虚拟,并不是对类的主动使用,因此类不会初始化
+                Class<?> myClazz = systemClassLoader.loadClass("com.dennis.classloading.MyClass");
+                System.out.println(myClazz);
+                System.out.println("===================");
+                // 反射获取类的class object,是对类的主动使用,会使类进行初始化
+                Class<?> aClass = Class.forName("com.dennis.classloading.MyClass");
+                System.out.println(aClass);
+            }
+        }
 
+        class MyClass {
+            static {
+                System.out.println("MyClass has been initialized");
+            }
+        }
+    ````
+- **总结架构图：**
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200423112622.png)
+
+## 类加载器及加载机制
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200423163341.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200423163718.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200423162529.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200423164100.png)
+
+- **查看一个类被加载时，所用到的具体类加载器：**
+    ````java
+        package com.dennis.classloader;
+    /**
+    * 描述：查看一个类被加载时，所用到的具体类加载器
+    *
+    * @author Dennis
+    * @version 1.0
+    * @date 2020/4/23 16:47
+    */
+    public class ClassLoaderTest01 {
+        public static void main(String[] args) throws ClassNotFoundException {
+            Class<?> stringClazz = Class.forName("java.lang.String");
+            System.out.println(stringClazz.getClassLoader());       // 采用根加载器加载String类
+
+            Class<?> cClazz = Class.forName("com.dennis.classloader.C");
+            System.out.println(cClazz.getClassLoader());            //采用AppClassLoader加载C类
+        }
+    }
+    class C {
+
+    }
+    ````
+- **通过当前类加载器应获取所有父加载器：**
+    ````java
+        package com.dennis.classloader;
+        /**
+        * 描述： 通过当前类加载器应获取所有父加载器
+        * sun.misc.Launcher$AppClassLoader@18b4aac2 =====> 系统加载器
+        * sun.misc.Launcher$ExtClassLoader@4554617c =====> 扩展加载器
+        * null                                      =====> 根加载器
+        * @author Dennis
+        * @version 1.0
+        * @date 2020/4/23 20:13
+        */
+        public class ClassLoaderTest02 {
+            /**
+            * 通过结果可以看出，当前类的类加载器为AppClassLoader,即：加载该类的类加载器为AppClassLoader
+            * 虽然有父加载器ExtClassLoader,甚至祖父加载器BootClassLoader,但是当前类位于classPath下,而
+            * ExtClassLoader(LoadJRE\lib\ext\*.jar或者Djava.ext.dirs指定目录下的jar包),
+            * BootClassLoader(LoadJRE\lib\rt.jar或则Xbootclasspath选项所指定目录下的的jar包)
+            * 均加载不了classPath下的.class文件,所以当前类又交回给AppClassLoader进行类的加载
+            */
+            public static void main(String[] args) {
+                Class<?> clazz = ClassLoaderTest02.class;
+                ClassLoader classLoader = clazz.getClassLoader();
+                System.out.println(classLoader);
+                while (classLoader != null ) {
+                    classLoader = classLoader.getParent();
+                    System.out.println(classLoader);
+                }
+            }
+        }
+    ````
+    - **该图可很好总结上例中的文字描述**
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200423223258.png)
+
+   
+
+- **通过资源名称resourceName获取到.class文件所在位置url：**
+    ````java
+        package com.dennis.classloader;
+        import java.io.IOException;
+        import java.net.URL;
+        import java.util.Enumeration;
+        /**
+        * 描述：通过资源名称resourceName获取到.class文件所在位置url
+        * @author   Dennis
+        * @date     2020/4/23 21:04
+        * @version  1.0
+        */
+        public class ClassLoaderTest03 {
+            public static void main(String[] args) throws IOException {
+                // 通过调用类加载器加载.class文件和资源文件的线程来获取上下文类加载器
+                ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+                // 资源名称
+                String resourceName = "com/dennis/classloader/ClassLoaderTest03.class";
+                // 获取定位资源文件的URLs
+                Enumeration<URL> urls = contextClassLoader.getResources(resourceName);
+                while (urls.hasMoreElements()){
+                    System.out.println(urls.nextElement()); //file:/D:/Code/github/jvm_learn/target/classes/com/dennis/classloader/ClassLoaderTest03.class
+                }
+            }
+        }
+    ````
 

@@ -8,11 +8,11 @@
 
 - **定义**
 
-  ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1578225721716.png)
+  ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/1578225721716.png)
 
 - **必要性**
 
-  ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1578225753125.png)
+  ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/1578225753125.png)
 
 - **javascript回调方法实例**
 
@@ -25,7 +25,7 @@
 
 - **Java匿名内部类实例**
 
-  ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1578226018767.png)
+  ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/1578226018767.png)
 
 - **lambda基本表达式**
 
@@ -49,7 +49,7 @@
 
 - **lambda表达式的作用：**
 
-  ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1578233716149.png)
+  ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/1578233716149.png)
 
 
 
@@ -177,7 +177,7 @@
   Process finished with exit code 0
   ```
 
-  **基本语法：**![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1578820600131.png)![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1578820635738.png)![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1578820662320.png)![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1578820730262.png)![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1578820852272.png)![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1578820910511.png)
+  **基本语法：**![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/1578820600131.png)![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/1578820635738.png)![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/1578820662320.png)![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/1578820730262.png)![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/1578820852272.png)![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/1578820910511.png)
 
 ## Function函数式接口与流初步
 
@@ -497,7 +497,7 @@
 
 - **BinaryOperator继承至BiFunction函数式接口，是一个参数类型和返回值类型都相同的特殊BiFunction接口**
 
-  ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1578843495732.png)
+  ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/1578843495732.png)
 
   ```java
   package com.dennis.jdk8.binaryoperator;
@@ -684,13 +684,13 @@
 
 ## 方法引用实现函数式接口
 
-![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1579016060897.png)
+![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/1579016060897.png)
 
 ## stream 流
 
 - **流的基本概念和介绍：一个支持串行和并行聚合操作的元素序列**
 
-  ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1579097161474.png)![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/image-20200203212019041.png)![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/image-20200203212401309.png)
+  ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/1579097161474.png)![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/image-20200203212019041.png)![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/image-20200203212401309.png)
 
 - **流的构成：分成三部分**
 
@@ -942,11 +942,11 @@
 
 - **内部迭代与外部迭代**
 
-  ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1579357345941.png)
+  ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/1579357345941.png)
 
   **外内部迭代示意图**
 
-  ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/1579357796154.png)
+  ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/1579357796154.png)
 
 - **Stream的并行与短路运算**
 
@@ -1194,14 +1194,14 @@
      - Function<A, R> finisher();
   3. 理解Collector中函数必须满足同一性（identity）和可结合性（associativity）的目的
 
-   ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/image-20200204205135907.png)![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200205173810.png)
+   ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/image-20200204205135907.png)![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200205173810.png)
 
    **A中间结果类型  T流中元素类型  R最终返回类型**
   
 - **Collectors辅助类:** 其本质就是一个搜集器对象的工厂类，通过静态方法创建些常见的CollectorImpl对象
     1. 预定义collector对象案例:
 
-        ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200205204004.png)
+        ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200205204004.png)
     
     2. collector可结合性（associativity）
     
@@ -1500,11 +1500,11 @@
     ```
 - BaseStream.close()方法重写自AutoCloseable接口，因此可以采用try-with-source方式来声明一个流对象（内部元素一般为文件、io或socket，否则不必对流采取关闭），代码块执行完毕时将自动触发BaseStream.onClose()方法
     - onClose()方法官方解释：
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200213223739.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200213223739.png)
 - BaseStream <T,S extends BaseStream<T,S>> **要点：** 为什么会定义一个S extends BaseStream<T,S>这样的泛型参数?--->为流的中间操作返回的新的流对象提供泛型参数限定，即:新的流对象的类型为:S extends BaseStream<T,S>
 
 - Spliterator<T> 分割迭代器：用来维护和遍历源中的元素
 - ReferencePileline:流的一个子类，何以保存上下游的Stream对象，使整个流源、中间操作和终止操作形成双向链表结构。
 - Sink:引水槽，维护操作动作的地方，可将所有的操作连接成单项链表
 - **架构图：**
-    ![](https://raw.githubusercontent.com/deninising/onlinepicture/master/blog/20200219225502.png)
+    ![](https://gitee.com/liao_peng/cloudpic/raw/master/blog/20200219225502.png)
